@@ -21,8 +21,8 @@ def apply_heading(main_window, level):
 def apply_bold(main_window):
         editor = main_window.get_current_editor()
         cursor = editor.textCursor()
-        # if not cursor.hasSelection():
-        #     return
+        if not cursor.hasSelection():
+            cursor.select(QTextCursor.LineUnderCursor)
 
         fmt = QTextCharFormat()
         current_weight = cursor.charFormat().fontWeight()
@@ -33,7 +33,7 @@ def apply_italic(main_window):
         editor = main_window.get_current_editor()
         cursor = editor.textCursor()
         if not cursor.hasSelection():
-            return
+            cursor.select(QTextCursor.LineUnderCursor)
 
         fmt = QTextCharFormat()
         current_italic = cursor.charFormat().fontItalic()
@@ -43,12 +43,17 @@ def apply_italic(main_window):
 def apply_bullet_list(main_window):
         editor = main_window.get_current_editor()
         cursor = editor.textCursor()
-        cursor.insertList(QTextListFormat.ListDisc)
+        if not cursor.hasSelection():
+            cursor.select(QTextCursor.LineUnderCursor)
+        # using createList to apply the bullet without removing the rext
+        cursor.createList(QTextListFormat.ListDisc)
 
 def apply_numbered_list(main_window):
         editor = main_window.get_current_editor()
         cursor = editor.textCursor()
-        cursor.insertList(QTextListFormat.ListDecimal)
+        if not cursor.hasSelection():
+            cursor.select(QTextCursor.LineUnderCursor)
+        cursor.createList(QTextListFormat.ListDecimal)
 
 def insert_link(main_window):
         editor = main_window.get_current_editor()
@@ -64,3 +69,13 @@ def insert_link(main_window):
             fmt.setForeground("blue")
             fmt.setFontUnderline(True)
             cursor.setCharFormat(fmt)
+
+def apply_font_size(main_window, size_str):
+        editor = main_window.get_current_editor()
+        cursor = editor.textCursor()
+        if not cursor.hasSelection():
+            cursor.select(QTextCursor.LineUnderCursor)
+        size = int(size_str)
+        fmt = QTextCharFormat()
+        fmt.setFontPointSize(size)
+        cursor.mergeCharFormat(fmt)
