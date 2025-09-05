@@ -13,6 +13,7 @@ def new_file(main_window):
 def new_tab(main_window):
     widget = QWidget()
     layout = QVBoxLayout()
+    layout.setContentsMargins(8, 8, 8, 8)
     editor = QTextEdit()
     layout.addWidget(editor)
     widget.setLayout(layout)

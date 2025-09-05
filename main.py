@@ -1,11 +1,15 @@
 import sys
+
+from PySide6.QtCore import QSize
+
 import handle_files as hf
 from zoom_utils import handle_keypress, handle_wheel
-from line_swapper import LineSwapper  # Add this import
-from PySide6.QtGui import QIcon, QAction, QKeySequence, QShortcut, QTextCursor
+from line_swapper import LineSwapper
+from theme_manager import ThemeManager
+from PySide6.QtGui import QIcon, QAction, QKeySequence, QShortcut, QActionGroup, QFont
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QTextEdit, QStatusBar,
-    QTabWidget,
+    QTabWidget, QWidget, QVBoxLayout,
 )
 from toolbar import FormattingToolbar
 
@@ -13,10 +17,18 @@ from toolbar import FormattingToolbar
 class LawranPad(QMainWindow):
     def __init__(self):
         super().__init__()
+        # initialize theme manager
+        self.theme_manager = ThemeManager()
         # Window setup
         self.child_windows = []
         self.setWindowTitle("Lawran Pad")
-        self.resize(900, 600)
+        self.resize(1000, 700)
+
+        # create central widget with layout for better spacing.
+        central_widget = QWidget()
+        central_layout = QVBoxLayout(central_widget)
+        central_layout.setContentsMargins(0, 0, 0, 0)
+        central_layout.setSpacing(0)
 
         # Tab widget to manage multiple documents
         self.tabs = QTabWidget()
@@ -28,19 +40,24 @@ class LawranPad(QMainWindow):
 
         # Status Bar
         self.status = QStatusBar()
+        self.status.setStyleSheet("QStatusBar{padding: 4px;}")
         self.setStatusBar(self.status)
 
         # setup menus
         self._create_actions()
         self._create_menus()
-        self._create_shortcuts()  # Add this line
+        self._create_shortcuts()
 
         # Start with one new tab
         hf.new_tab(self)
 
         # formating toolbar
         toolbar = FormattingToolbar(self)
+        toolbar.setMovable(False)
+        toolbar.setIconSize(QSize(24, 24))
         self.addToolBar(toolbar)
+
+        self._style_current_editor()
 
     def _create_actions(self):
         # Create the actions
@@ -88,6 +105,7 @@ class LawranPad(QMainWindow):
 
         file_menu.addSeparator()
         file_menu.addAction(self.exit_action)
+
         # Edit Menu
         edit_menu = menu_bar.addMenu("Edit")
         edit_menu.addAction(self.undo_action)
@@ -96,6 +114,34 @@ class LawranPad(QMainWindow):
         edit_menu.addAction(self.cut_action)
         edit_menu.addAction(self.copy_action)
         edit_menu.addAction(self.paste_action)
+        # View Menu with theme options
+        view_menu = menu_bar.addMenu("View")
+        theme_menu = view_menu.addMenu("Theme")
+
+        # create theme action group
+        theme_group = QActionGroup(self)
+
+        # Add popular themes
+        themes = [
+            ('dark_teal.xml', 'Dark Teal'),
+            ('dark_cyan.xml', 'Dark Cyan'),
+            ('dark_blue.xml', 'Dark Blue'),
+            ('dark_purple.xml', 'Dark Purple'),
+            ('light_teal.xml', 'Light Teal'),
+            ('light_cyan.xml', 'Light Cyan'),
+            ('light_blue.xml', 'Light Blue'),
+            ('light_purple.xml', 'Light Purple'),
+        ]
+
+        for theme_file, theme_name in themes:
+            action = QAction(theme_name, self)
+            action.setCheckable(True)
+            action.setActionGroup(theme_group)
+            if theme_file == self.theme_manager.current_theme:
+                action.setChecked(True)
+            action.triggered.connect(lambda checked, t=theme_file: self.change_theme(t))
+            theme_menu.addAction(action)
+
         # Help Menu
         help_menu = menu_bar.addMenu("Help")
         help_menu.addAction(self.about_action)
@@ -132,6 +178,22 @@ class LawranPad(QMainWindow):
         if editor:
             LineSwapper.swap_lines_down(editor)
 
+    def change_theme(self, theme_name):
+        """Change the application theme"""
+        app = QApplication.instance()
+        self.theme_manager.apply_theme(app, theme_name)
+        self.theme_manager.save_theme_preference(theme_name)
+        self.status.showMessage(f"Theme changed to {theme_name.replace('.xml', '').replace('_', ' ').title()}", 2000)
+
+    def _style_current_editor(self):
+        """Apply additional styling to the current editor"""
+        editor = self.get_current_editor()
+        if editor:
+            # Set a nice monospace font
+            font = QFont("Consolas", 11)
+            font.setStyleHint(QFont.Monospace)
+            editor.setFont(font)
+
     def get_current_editor(self):
         widget = self.tabs.currentWidget()
         if widget:
@@ -160,6 +222,8 @@ class LawranPad(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    theme_manager = ThemeManager()
+    theme_manager.apply_theme(app)
     window = LawranPad()
     window.show()
     sys.exit(app.exec())
