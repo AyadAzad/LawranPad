@@ -1,0 +1,266 @@
+@tailwind utilities;
+
+/* Lexical editor styles */
+.ContentEditable__root {
+  position: relative;
+  outline: 0;
+  overflow: auto;
+  tab-size: 1;
+  min-height: 100%;
+}
+
+/* Ensure text styles are applied */
+[data-lexical-editor] {
+  position: relative;
+}
+
+/* Allow direct style inheritance for all editor elements */
+[data-lexical-editor] * {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Support for text formatting */
+[data-lexical-editor] *[style] {
+  font-size: inherit; /* This allows inline styles to override */
+}
+
+/* Allow direct style application */
+[data-lexical-editor] span {
+  font-size: inherit;
+}
+
+/* Ensure inline styles take precedence */
+[data-lexical-editor] span[style] {
+  font-family: unset !important;
+  font-size: unset !important;
+}
+
+/* Style overrides for better visibility */
+[data-lexical-editor] [style*="font-family"],
+[data-lexical-editor] [style*="font-size"] {
+  all: revert;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Ensure inline styles take precedence */
+[data-lexical-editor] [style*="font-size"] {
+  font-size: unset !important; /* This ensures the inline style is used */
+}
+
+/* Text alignment styles */
+[data-lexical-editor] {
+  & p {
+    margin-bottom: 0.5rem;
+  }
+
+  & p[data-lexical-text-align-left] {
+    text-align: left;
+  }
+
+  & p[data-lexical-text-align-center] {
+    text-align: center;
+  }
+
+  & p[data-lexical-text-align-right] {
+    text-align: right;
+  }
+
+  & p[data-lexical-text-align-justify] {
+    text-align: justify;
+  }
+}
+
+/* Ensure alignment styles take precedence */
+[data-lexical-editor] [style*="text-align"] {
+  text-align: unset !important;
+}
+
+/* Support for highlight colors */
+[data-lexical-editor] [style*="background-color"] {
+  background-color: unset; /* Reset any existing background color */
+}
+
+[data-lexical-editor] span[style*="background-color"] {
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* Enhanced color picker styles */
+.color-picker-popup {
+  backdrop-filter: blur(8px);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 5px 10px -5px rgba(0, 0, 0, 0.05);
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+}
+
+/* Custom color input styling */
+input[type="color"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+}
+
+input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+}
+
+/* Color swatch animations */
+.color-swatch {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.color-swatch:hover {
+  transform: scale(1.1) rotate(-3deg);
+}
+
+/* Glass effect for color picker popup */
+.color-picker-content {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth transitions for color changes */
+[data-lexical-editor] [style*="color:"] {
+  transition: color 0.2s ease;
+}
+
+/* Additional styles */
+.highlight-color-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+/* Improved button transitions */
+.toolbar-button {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
+/* Smooth hover transitions */
+@layer components {
+  .toolbar-btn-hover {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .toolbar-btn-active {
+    @apply relative after:absolute after:bottom-0 after:left-1/2
+           after:-translate-x-1/2 after:h-0.5 after:bg-blue-500
+           after:transition-all after:duration-200;
+  }
+
+  /* Enhanced StrikethroughButton styles */
+  .strikethrough-btn {
+    @apply relative;
+    transform-style: preserve-3d;
+  }
+
+  .strikethrough-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Custom animation for the strikethrough line */
+  @keyframes strikethrough {
+    from {
+      width: 0;
+      opacity: 0;
+    }
+    to {
+      width: 100%;
+      opacity: 1;
+    }
+  }
+
+  /* Hover effect for strikethrough button */
+  .strikethrough-hover-effect {
+    @apply absolute inset-0 bg-gradient-to-tr from-blue-50/20 to-transparent
+           opacity-0 transition-opacity duration-300;
+  }
+
+  .strikethrough-btn:hover .strikethrough-hover-effect {
+    @apply opacity-100;
+  }
+
+  /* Active state glow effect */
+  .strikethrough-active-glow {
+    @apply absolute inset-0 rounded-lg pointer-events-none;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.2;
+    }
+  }
+}
+
+/* Line spacing dropdown specific styles */
+.line-spacing-dropdown {
+  @apply relative inline-block;
+}
+
+.line-spacing-button {
+  @apply relative inline-flex items-center;
+  perspective: 1000px;
+}
+
+.line-spacing-menu {
+  @apply py-1 overflow-hidden;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(8px);
+}
+
+.line-spacing-option {
+  @apply relative overflow-hidden;
+}
+
+.line-spacing-option::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-r from-transparent via-blue-50/30 to-transparent opacity-0 transition-opacity duration-200;
+}
+
+.line-spacing-option:hover::before {
+  @apply opacity-100;
+}
+
+/* Improved hover animations */
+@layer utilities {
+  .hover-lift {
+    @apply transition-transform duration-200 ease-out;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-1px);
+  }
+}

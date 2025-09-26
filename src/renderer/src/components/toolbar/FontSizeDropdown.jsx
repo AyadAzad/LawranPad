@@ -1,0 +1,54 @@
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
+import { $getSelection, $isRangeSelection } from 'lexical'
+import { $patchStyleText } from '@lexical/selection'
+import { useState, useCallback } from 'react'
+
+const FONT_SIZES = {
+  'text-xs': '12px',
+  'text-sm': '14px',
+  'text-base': '16px',
+  'text-lg': '18px',
+  'text-xl': '20px',
+  'text-2xl': '24px',
+  'text-3xl': '30px',
+  'text-4xl': '36px'
+}
+
+const FontSizeDropdown = () => {
+  const [editor] = useLexicalComposerContext()
+  const [currentSize, setCurrentSize] = useState('text-base')
+
+  const handleChange = useCallback(
+    (e) => {
+      const fontSize = e.target.value
+      setCurrentSize(fontSize)
+
+      editor.update(() => {
+        const selection = $getSelection()
+        if ($isRangeSelection(selection)) {
+          $patchStyleText(selection, {
+            'font-size': FONT_SIZES[fontSize]
+          })
+        }
+      })
+    },
+    [editor]
+  )
+
+  return (
+    <select
+      className="px-2 py-1 border rounded hover:border-blue-500 focus:border-blue-500 focus:outline-none min-w-[80px]"
+      title="Font Size"
+      onChange={handleChange}
+      value={currentSize}
+    >
+      {Object.entries(FONT_SIZES).map(([className, size]) => (
+        <option key={className} value={className}>
+          {size}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+export default FontSizeDropdown
