@@ -11,6 +11,8 @@ import { CodeHighlightNode, CodeNode } from '@lexical/code'
 import { AutoLinkNode, LinkNode } from '@lexical/link'
 import { TextFormatPlugin } from './toolbar/TextFormatPlugin'
 import Toolbar from './Toolbar'
+import FileToolbar from './FileToolbar'
+import { $createParagraphNode, $createTextNode, $getRoot } from 'lexical'
 
 const editorConfig = {
   namespace: 'MyEditor',
@@ -24,13 +26,11 @@ const editorConfig = {
       underlineStrikethrough: 'underline line-through',
       fontFamily: 'font-family'
     },
-    // Add alignment classes
     paragraph: 'mb-2',
     paragraphLeft: 'text-left',
     paragraphCenter: 'text-center',
     paragraphRight: 'text-right',
     paragraphJustify: 'text-justify',
-    // Add font size classes
     fontSize: {
       '12px': 'text-xs',
       '14px': 'text-sm',
@@ -54,11 +54,9 @@ const editorConfig = {
     CodeNode,
     AutoLinkNode,
     LinkNode
-  ],
-  editorState: null
+  ]
 }
 
-// Custom styles that will be applied globally to the editor
 const styles = `
   .editor-underline {
     text-decoration: underline;
@@ -68,24 +66,31 @@ const styles = `
   }
 `
 
-export default function Editor() {
+export default function Editor({ initialContent, filePath }) {
   return (
-    <div className="flex flex-1 items-center justify-center min-h-0 h-full w-full bg-gradient-to-br from-green-100 via-white to-blue-100 p-0">
-      <div className="flex flex-col flex-1 max-w-4xl min-h-[60vh] h-[70vh] bg-white/90 rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
-        <LexicalComposer
-          initialConfig={{
-            ...editorConfig,
-            onError: (error) => console.error(error),
-            nodes: [...(editorConfig.nodes || [])]
-          }}
-        >
-          <div className="editor-shell">
+    <div className="flex flex-1 items-center justify-center min-h-0 h-full w-full">
+      <LexicalComposer
+        initialConfig={{
+          ...editorConfig,
+          editorState: initialContent
+            ? () => {
+                const root = $getRoot()
+                const paragraph = $createParagraphNode()
+                paragraph.append($createTextNode(initialContent))
+                root.append(paragraph)
+              }
+            : null
+        }}
+      >
+        <div className="flex flex-row flex-1 max-w-5xl w-full min-h-[70vh] h-[70vh] bg-white/90 rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+          <FileToolbar filePath={filePath} />
+          <div className="flex flex-col flex-1">
             <style>{styles}</style>
             <Toolbar />
             <div className="flex-1 relative flex flex-col">
               <RichTextPlugin
                 contentEditable={
-                  <ContentEditable className="outline-none w-full h-full min-h-[40vh] bg-white rounded-xl px-6 py-5 text-lg text-gray-800 focus:ring-2 focus:ring-blue-300 transition shadow-inner" />
+                  <ContentEditable className="outline-none w-full h-full min-h-[40vh] bg-white rounded-b-xl px-6 py-5 text-lg text-gray-800 focus:ring-2 focus:ring-blue-300 transition shadow-inner" />
                 }
                 placeholder={
                   <div className="absolute left-8 top-8 text-gray-400 select-none pointer-events-none text-lg">
@@ -96,17 +101,11 @@ export default function Editor() {
               />
               <HistoryPlugin />
               <TextFormatPlugin />
-              <OnChangePlugin
-                onChange={(editorState) => {
-                  editorState.read(() => {
-                    // Read the editor state if needed
-                  })
-                }}
-              />
+              <OnChangePlugin onChange={(editorState) => editorState.read(() => {})} />
             </div>
           </div>
-        </LexicalComposer>
-      </div>
+        </div>
+      </LexicalComposer>
     </div>
   )
 }

@@ -1,6 +1,7 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { readFile, writeFile } from 'fs'
 
 function createWindow() {
   // Create the browser window.
@@ -51,6 +52,87 @@ app.whenReady().then(() => {
 
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
+
+  ipcMain.on('open-file', (event) => {
+    dialog
+      .showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: 'Documents', extensions: ['txt', 'docx'] }]
+      })
+      .then((result) => {
+        if (!result.canceled) {
+          const filePath = result.filePaths[0]
+          readFile(filePath, 'utf-8', (err, data) => {
+            if (err) {
+              console.log(err)
+              return
+            }
+            event.sender.send('file-opened', { filePath, data })
+          })
+        }
+      })
+      .catch((err) => {
+        console.log(err)
+      })
+  })
+
+  ipcMain.on('save-file', (event, { filePath, data }) => {
+    if (filePath) {
+      writeFile(filePath, data, (err) => {
+        if (err) {
+          console.log(err)
+        } else {
+          event.sender.send('file-saved', filePath)
+        }
+      })
+    } else {
+      dialog
+        .showSaveDialog({
+          filters: [{ name: 'Documents', extensions: ['txt', 'docx'] }]
+        })
+        .then((result) => {
+          if (!result.canceled) {
+            const newFilePath = result.filePath
+            writeFile(newFilePath, data, (err) => {
+              if (err) {
+                console.log(err)
+                return
+              }
+              event.sender.send('file-saved', newFilePath)
+            })
+          }
+        })
+        .catch((err) => {
+          console.log(err)
+        })
+    }
+  })
+
+  ipcMain.on('save-file-as', (event, data) => {
+    dialog
+      .showSaveDialog({
+        filters: [{ name: 'Documents', extensions: ['txt', 'docx'] }]
+      })
+      .then((result) => {
+        if (!result.canceled) {
+          const filePath = result.filePath
+          writeFile(filePath, data, (err) => {
+            if (err) {
+              console.log(err)
+              return
+            }
+            event.sender.send('file-saved', filePath)
+          })
+        }
+      })
+      .catch((err) => {
+        console.log(err)
+      })
+  })
+
+  ipcMain.on('exit-app', () => {
+    app.quit()
+  })
 
   createWindow()
 
