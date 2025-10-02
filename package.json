@@ -30,6 +30,7 @@
     "@lexical/text": "^0.35.0",
     "@lexical/utils": "^0.35.0",
     "@tailwindcss/vite": "^4.1.13",
+    "better-sqlite3": "^12.4.1",
     "lexical": "^0.35.0"
   },
   "devDependencies": {
@@ -39,6 +40,7 @@
     "autoprefixer": "^10.4.21",
     "electron": "^31.0.2",
     "electron-builder": "^24.13.3",
+    "electron-rebuild": "^3.2.9",
     "electron-vite": "^2.3.0",
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.34.3",

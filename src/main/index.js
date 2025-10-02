@@ -1,7 +1,15 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
-import { join } from 'path'
+import { join, dirname, extname } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { readFile, writeFile } from 'fs'
+import { readFile, writeFile, rename } from 'fs'
+import {
+  initDatabase,
+  listDocuments,
+  getDocument,
+  createDocument,
+  updateDocument,
+  deleteDocument
+} from './database.js'
 
 function createWindow() {
   // Create the browser window.
@@ -14,7 +22,9 @@ function createWindow() {
     ...(process.platform === 'win32' ? { icon: join(__dirname, '../../resources/icon.ico') } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      nodeIntegration: true,
+      contextIsolation: false
     }
   })
 
@@ -39,118 +49,149 @@ function createWindow() {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.lawran.lawranpad')
+app
+  .whenReady()
+  .then(() => {
+    // Set app user model id for windows
+    electronApp.setAppUserModelId('com.lawran.lawranpad')
 
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
+    // Initialize database
+    try {
+      initDatabase(app.getPath('userData'))
+    } catch (err) {
+      console.error('Failed to initialize database:', err)
+      dialog.showErrorBox(
+        'Database Error',
+        'Could not initialize the database. The application will now close.'
+      )
+      app.quit()
+      return
+    }
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+    // Default open or close DevTools by F12 in development
+    // and ignore CommandOrControl + R in production.
+    app.on('browser-window-created', (_, window) => {
+      optimizer.watchWindowShortcuts(window)
+    })
 
-  ipcMain.on('open-file', (event) => {
-    dialog
-      .showOpenDialog({
-        properties: ['openFile'],
-        filters: [{ name: 'Documents', extensions: ['txt', 'docx'] }]
-      })
-      .then((result) => {
-        if (!result.canceled) {
-          const filePath = result.filePaths[0]
-          readFile(filePath, 'utf-8', (err, data) => {
-            if (err) {
-              console.log(err)
-              return
-            }
-            event.sender.send('file-opened', { filePath, data })
-          })
-        }
-      })
-      .catch((err) => {
-        console.log(err)
-      })
-  })
+    // --- Database IPC Handlers ---
+    ipcMain.handle('get-documents', () => listDocuments())
+    ipcMain.handle('get-document', (event, id) => getDocument(id))
+    ipcMain.handle('create-document', (event, data) => createDocument(data))
+    ipcMain.handle('update-document', (event, { id, data }) => updateDocument(id, data))
+    ipcMain.handle('delete-document', (event, id) => deleteDocument(id))
 
-  ipcMain.on('save-file', (event, { filePath, data }) => {
-    if (filePath) {
-      writeFile(filePath, data, (err) => {
-        if (err) {
-          console.log(err)
-        } else {
-          event.sender.send('file-saved', filePath)
-        }
-      })
-    } else {
+    // --- Legacy File-System IPC Handlers ---
+    ipcMain.on('open-file', (event) => {
       dialog
-        .showSaveDialog({
-          filters: [{ name: 'Documents', extensions: ['txt', 'docx'] }]
+        .showOpenDialog({
+          properties: ['openFile'],
+          filters: [{ name: 'Documents', extensions: ['txt', 'md', 'docx'] }]
         })
         .then((result) => {
           if (!result.canceled) {
-            const newFilePath = result.filePath
-            writeFile(newFilePath, data, (err) => {
+            const filePath = result.filePaths[0]
+            readFile(filePath, 'utf-8', (err, data) => {
               if (err) {
                 console.log(err)
                 return
               }
-              event.sender.send('file-saved', newFilePath)
+              event.sender.send('file-opened', { filePath, data })
             })
           }
         })
         .catch((err) => {
           console.log(err)
         })
-    }
-  })
+    })
 
-  ipcMain.on('save-file-as', (event, data) => {
-    dialog
-      .showSaveDialog({
-        filters: [{ name: 'Documents', extensions: ['txt', 'docx'] }]
-      })
-      .then((result) => {
-        if (!result.canceled) {
-          const filePath = result.filePath
-          writeFile(filePath, data, (err) => {
-            if (err) {
-              console.log(err)
-              return
-            }
+    ipcMain.on('save-file', (event, { filePath, data }) => {
+      if (filePath) {
+        writeFile(filePath, data, (err) => {
+          if (err) {
+            console.log(err)
+          } else {
             event.sender.send('file-saved', filePath)
+          }
+        })
+      } else {
+        dialog
+          .showSaveDialog({
+            filters: [{ name: 'Documents', extensions: ['txt', 'md', 'docx'] }]
           })
-        }
-      })
-      .catch((err) => {
-        console.log(err)
-      })
-  })
+          .then((result) => {
+            if (!result.canceled) {
+              const newFilePath = result.filePath
+              writeFile(newFilePath, data, (err) => {
+                if (err) {
+                  console.log(err)
+                  return
+                }
+                event.sender.send('file-saved', newFilePath)
+              })
+            }
+          })
+          .catch((err) => {
+            console.log(err)
+          })
+      }
+    })
 
-  ipcMain.on('exit-app', () => {
+    ipcMain.on('save-file-as', (event, { data, defaultName }) => {
+      dialog
+        .showSaveDialog({
+          defaultPath: defaultName ? `${defaultName}.txt` : 'Untitled.txt',
+          filters: [{ name: 'Documents', extensions: ['txt', 'md', 'docx'] }]
+        })
+        .then((result) => {
+          if (!result.canceled) {
+            const filePath = result.filePath
+            writeFile(filePath, data, (err) => {
+              if (err) {
+                console.log(err)
+                return
+              }
+              event.sender.send('file-saved', filePath)
+            })
+          }
+        })
+        .catch((err) => {
+          console.log(err)
+        })
+    })
+
+    ipcMain.on('rename-file', (event, { oldPath, newName }) => {
+      const dir = dirname(oldPath)
+      const ext = extname(oldPath)
+      const newPath = join(dir, `${newName}${ext}`)
+
+      rename(oldPath, newPath, (err) => {
+        if (err) {
+          console.log('Error renaming file:', err)
+          return
+        }
+        event.sender.send('file-renamed', newPath)
+      })
+    })
+
+    createWindow()
+
+    app.on('activate', function () {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
+  })
+  .catch((err) => {
+    console.error('Application startup failed:', err)
+    dialog.showErrorBox(
+      'Application Error',
+      'A critical error occurred during startup. The application will now close.'
+    )
     app.quit()
   })
 
-  createWindow()
-
-  app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+// Quit when all windows are closed, except on macOS.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.

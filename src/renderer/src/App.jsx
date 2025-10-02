@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { $createParagraphNode, $createTextNode, $getRoot } from 'lexical'
 import Editor from './components/Editor'
 import Toolbar from './components/Toolbar'
 import FileToolbar from './components/FileToolbar'
+import OutputToolbar from './components/OutputToolbar'
+import Footer from './components/Footer'
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
 import { TableCellNode, TableNode, TableRowNode } from '@lexical/table'
 import { ListItemNode, ListNode } from '@lexical/list'
 import { CodeHighlightNode, CodeNode } from '@lexical/code'
 import { AutoLinkNode, LinkNode } from '@lexical/link'
+import Dashboard from './components/Dashboard'
 
 const editorConfig = {
   namespace: 'MyEditor',
@@ -17,26 +20,27 @@ const editorConfig = {
     text: {
       bold: 'font-bold',
       italic: 'italic',
-      underline: 'underline',
+      underline: 'editor-underline',
       strikethrough: 'line-through',
-      underlineStrikethrough: 'underline line-through',
-      fontFamily: 'font-family'
+      underlineStrikethrough: 'editor-underline line-through'
     },
-    paragraph: 'mb-2',
-    paragraphLeft: 'text-left',
-    paragraphCenter: 'text-center',
-    paragraphRight: 'text-right',
-    paragraphJustify: 'text-justify',
-    fontSize: {
-      '12px': 'text-xs',
-      '14px': 'text-sm',
-      '16px': 'text-base',
-      '18px': 'text-lg',
-      '20px': 'text-xl',
-      '24px': 'text-2xl',
-      '30px': 'text-3xl',
-      '36px': 'text-4xl'
-    }
+    paragraph: 'mb-4 leading-relaxed',
+    heading: {
+      h1: 'text-3xl font-bold mb-6 mt-8 text-gray-900',
+      h2: 'text-2xl font-bold mb-4 mt-6 text-gray-900',
+      h3: 'text-xl font-bold mb-3 mt-5 text-gray-900',
+      h4: 'text-lg font-bold mb-2 mt-4 text-gray-900',
+      h5: 'text-base font-bold mb-2 mt-3 text-gray-900',
+      h6: 'text-sm font-bold mb-2 mt-2 text-gray-900'
+    },
+    list: {
+      ol: 'list-decimal ml-6 mb-4',
+      ul: 'list-disc ml-6 mb-4'
+    },
+    listitem: 'mb-1',
+    quote: 'border-l-4 border-blue-500 pl-4 py-2 my-4 bg-blue-50 italic text-gray-700',
+    code: 'bg-gray-100 px-2 py-1 rounded text-sm font-mono',
+    codeblock: 'bg-gray-100 p-4 rounded-lg font-mono text-sm mb-4 overflow-x-auto'
   },
   nodes: [
     HeadingNode,
@@ -53,53 +57,204 @@ const editorConfig = {
   ]
 }
 
+const ZOOM_PRESETS = [50, 75, 100, 125, 150, 175, 200]
+
 export default function App() {
-  const [filePath, setFilePath] = useState(null)
-  const [initialContent, setInitialContent] = useState('')
+  const [activeDocument, setActiveDocument] = useState(null)
   const [key, setKey] = useState(Date.now())
+  const [lastSaved, setLastSaved] = useState(null)
+  const [zoomLevel, setZoomLevel] = useState(100)
+
+  const handleNewDocument = useCallback(() => {
+    setActiveDocument({ id: null, content: '', filePath: null, isNew: true })
+    setKey(Date.now())
+    setLastSaved(null)
+  }, [])
+
+  const handleOpenRecentDocument = useCallback(async (id) => {
+    try {
+      const doc = await window.electron.ipcRenderer.invoke('get-document', id)
+      if (doc) {
+        setActiveDocument({
+          id: doc.id,
+          content: doc.content || '',
+          filePath: doc.filePath || null,
+          isNew: false
+        })
+        setKey(Date.now())
+        setLastSaved(doc.updatedAt ? new Date(doc.updatedAt) : null)
+      }
+    } catch (error) {
+      console.error('Failed to open recent document:', error)
+    }
+  }, [])
 
   useEffect(() => {
     const handleFileOpened = (event, { filePath, data }) => {
-      setFilePath(filePath)
-      setInitialContent(data)
-      setKey(Date.now()) // Remounts the editor with new content
+      setActiveDocument({ id: null, content: data, filePath: filePath, isNew: false })
+      setKey(Date.now())
+      setLastSaved(null)
     }
 
     const handleFileSaved = (event, newFilePath) => {
-      setFilePath(newFilePath)
+      setActiveDocument((prev) => (prev ? { ...prev, filePath: newFilePath, isNew: false } : null))
+      setLastSaved(Date.now())
+    }
+
+    const handleFileRenamed = (event, newPath) => {
+      setActiveDocument((prev) => (prev ? { ...prev, filePath: newPath } : null))
+      setLastSaved(Date.now())
     }
 
     window.electron.ipcRenderer.on('file-opened', handleFileOpened)
     window.electron.ipcRenderer.on('file-saved', handleFileSaved)
+    window.electron.ipcRenderer.on('file-renamed', handleFileRenamed)
 
     return () => {
       window.electron.ipcRenderer.removeAllListeners('file-opened')
       window.electron.ipcRenderer.removeAllListeners('file-saved')
+      window.electron.ipcRenderer.removeAllListeners('file-renamed')
     }
   }, [])
 
+  const increaseZoom = useCallback(() => {
+    setZoomLevel((prev) => {
+      const currentIndex = ZOOM_PRESETS.findIndex((preset) => preset >= prev)
+      if (currentIndex < ZOOM_PRESETS.length - 1) {
+        return ZOOM_PRESETS[currentIndex + 1]
+      }
+      return Math.min(prev + 25, 300)
+    })
+  }, [])
+
+  const decreaseZoom = useCallback(() => {
+    setZoomLevel((prev) => {
+      const currentIndex = ZOOM_PRESETS.findIndex((preset) => preset >= prev)
+      if (currentIndex > 0) {
+        return ZOOM_PRESETS[currentIndex - 1]
+      }
+      return Math.max(prev - 25, 25)
+    })
+  }, [])
+
+  const resetZoom = useCallback(() => {
+    setZoomLevel(100)
+  }, [])
+
+  const setZoomPreset = useCallback((preset) => {
+    setZoomLevel(preset)
+  }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.metaKey || event.ctrlKey) {
+        switch (event.code) {
+          case 'Equal':
+          case 'NumpadAdd':
+            event.preventDefault()
+            increaseZoom()
+            break
+
+          case 'Minus':
+          case 'NumpadSubtract':
+            event.preventDefault()
+            decreaseZoom()
+            break
+
+          case 'Digit0':
+          case 'Numpad0':
+            event.preventDefault()
+            resetZoom()
+            break
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [increaseZoom, decreaseZoom, resetZoom])
+
+  useEffect(() => {
+    const handleWheel = (event) => {
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault()
+        if (event.deltaY < 0) {
+          increaseZoom()
+        } else if (event.deltaY > 0) {
+          decreaseZoom()
+        }
+      }
+    }
+
+    window.addEventListener('wheel', handleWheel, { passive: false })
+    return () => window.removeEventListener('wheel', handleWheel)
+  }, [increaseZoom, decreaseZoom])
+
   const initialConfig = {
     ...editorConfig,
-    editorState: initialContent
+    editorState: activeDocument?.content
       ? () => {
           const root = $getRoot()
           const paragraph = $createParagraphNode()
-          paragraph.append($createTextNode(initialContent))
+          paragraph.append($createTextNode(activeDocument.content))
           root.append(paragraph)
         }
       : null
   }
 
+  if (!activeDocument) {
+    return (
+      <Dashboard
+        onNewDocument={handleNewDocument}
+        onOpenRecentDocument={handleOpenRecentDocument}
+      />
+    )
+  }
+
   return (
     <LexicalComposer key={key} initialConfig={initialConfig}>
-      <div className="min-h-screen w-full bg-gradient-to-br from-green-50 via-green-100 to-green-200 flex">
-        <FileToolbar filePath={filePath} />
-        <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
-          <Toolbar />
-          <div className="flex-1 flex items-center justify-center p-6 overflow-auto">
-            <Editor />
-          </div>
-        </main>
+      <div className="relative min-h-screen w-full">
+        <div className="min-h-screen w-full bg-gray-100 flex">
+          <FileToolbar filePath={activeDocument.filePath} />
+
+          <main className="flex-1 flex flex-col min-h-screen overflow-auto relative">
+            <div className="flex-1 py-8 px-4 overflow-auto pb-16">
+              <div
+                className="mx-auto bg-white shadow-2xl"
+                style={{
+                  transform: `scale(${zoomLevel / 100})`,
+                  transformOrigin: 'top center',
+                  transition: 'transform 0.2s ease-out',
+                  width: '794px',
+                  minHeight: '1123px',
+                  maxWidth: '794px'
+                }}
+              >
+                <div className="relative">
+                  <div className="absolute inset-0 border border-gray-200 pointer-events-none"></div>
+                  <div className="border-b border-gray-200">
+                    <Toolbar />
+                  </div>
+                  <div className="relative">
+                    <Editor zoomLevel={zoomLevel} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </main>
+
+          <OutputToolbar />
+        </div>
+        <Footer
+          filePath={activeDocument.filePath}
+          lastSaved={lastSaved}
+          zoomLevel={zoomLevel}
+          onZoomIn={increaseZoom}
+          onZoomOut={decreaseZoom}
+          onZoomReset={resetZoom}
+          onZoomPreset={setZoomPreset}
+          presets={ZOOM_PRESETS}
+        />
       </div>
     </LexicalComposer>
   )
