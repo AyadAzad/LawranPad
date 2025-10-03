@@ -9,52 +9,47 @@ import TextColorPicker from './toolbar/TextColorPicker'
 import HighlightColorPicker from './toolbar/HighlightColorPicker'
 import AlignmentDropdown from './toolbar/AlignmentDropdown'
 import LineSpacingDropdown from './toolbar/LineSpacingDropdown'
+import BulletPointButton from './toolbar/BulletPointButton'
+import NumberedPointButton from './toolbar/NumberedPointButton'
+import RomanPointButton from './toolbar/RomanPointButton'
+import TableInsertionButton from './toolbar/TableInsertionButton'
 
 const Toolbar = () => {
   const [editor] = useLexicalComposerContext()
 
   return (
-    <div className="flex items-center gap-1 p-3 border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 relative z-40">
-      {/* Font Controls Group */}
-      <div className="flex items-center gap-1 pr-2 border-r border-gray-200">
+    <div className="flex flex-wrap items-center gap-4 p-3 border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 relative z-40">
+      {/* Text Style Group */}
+      <div className="flex items-center gap-1">
         <FontFamilyDropdown editor={editor} />
         <FontSizeDropdown editor={editor} />
+        <div className="h-6 w-px bg-gray-300 mx-2" />
+        <BoldButton editor={editor} />
+        <ItalicButton editor={editor} />
+        <UnderlineButton editor={editor} />
+        <StrikethroughButton editor={editor} />
+        <div className="h-6 w-px bg-gray-300 mx-2" />
+        <TextColorPicker editor={editor} />
+        <HighlightColorPicker editor={editor} />
       </div>
 
-      {/* Text Formatting Group */}
-      <div className="flex items-center gap-1 px-2 border-r border-gray-200">
-        <div className="relative z-50">
-          <BoldButton editor={editor} />
-        </div>
-        <div className="relative z-50">
-          <ItalicButton editor={editor} />
-        </div>
-        <div className="relative z-50">
-          <UnderlineButton editor={editor} />
-        </div>
-        <div className="relative z-50">
-          <StrikethroughButton editor={editor} />
-        </div>
+      <div className="h-6 w-px bg-gray-400 mx-2" />
+
+      {/* Block Style Group */}
+      <div className="flex items-center gap-1">
+        <AlignmentDropdown editor={editor} />
+        <LineSpacingDropdown editor={editor} />
       </div>
 
-      {/* Color Controls Group */}
-      <div className="flex items-center gap-1 px-2 border-r border-gray-200">
-        <div className="relative z-50">
-          <TextColorPicker editor={editor} />
-        </div>
-        <div className="relative z-50">
-          <HighlightColorPicker editor={editor} />
-        </div>
-      </div>
+      <div className="h-6 w-px bg-gray-400 mx-2" />
 
-      {/* Paragraph Formatting Group */}
-      <div className="flex items-center gap-1 pl-2">
-        <div className="relative z-50">
-          <AlignmentDropdown editor={editor} />
-        </div>
-        <div className="relative z-50">
-          <LineSpacingDropdown editor={editor} />
-        </div>
+      {/* Insert Group */}
+      <div className="flex items-center gap-1">
+        <BulletPointButton editor={editor} />
+        <NumberedPointButton editor={editor} />
+        <RomanPointButton editor={editor} />
+        <div className="h-6 w-px bg-gray-300 mx-2" />
+        <TableInsertionButton editor={editor} />
       </div>
     </div>
   )

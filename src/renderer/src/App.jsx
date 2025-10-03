@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
-import { $createParagraphNode, $createTextNode, $getRoot } from 'lexical'
 import Editor from './components/Editor'
 import Toolbar from './components/Toolbar'
 import FileToolbar from './components/FileToolbar'
@@ -64,7 +63,7 @@ export default function App() {
   const [key, setKey] = useState(Date.now())
   const [lastSaved, setLastSaved] = useState(null)
   const [zoomLevel, setZoomLevel] = useState(100)
-
+  const contentRef = useRef('')
   const handleNewDocument = useCallback(() => {
     setActiveDocument({ id: null, content: '', filePath: null, isNew: true })
     setKey(Date.now())
@@ -75,6 +74,7 @@ export default function App() {
     try {
       const doc = await window.electron.ipcRenderer.invoke('get-document', id)
       if (doc) {
+        console.log('Opening recent document:', doc) // Debug log
         setActiveDocument({
           id: doc.id,
           content: doc.content || '',
@@ -91,17 +91,27 @@ export default function App() {
 
   useEffect(() => {
     const handleFileOpened = (event, { filePath, data }) => {
-      setActiveDocument({ id: null, content: data, filePath: filePath, isNew: false })
-      setKey(Date.now())
+      console.log('File opened:', { filePath, contentLength: data?.length }) // Debug log
+      console.log('File content preview:', data?.substring(0, 100)) // Preview first 100 chars
+
+      setActiveDocument({
+        id: null,
+        content: data || '',
+        filePath: filePath,
+        isNew: false
+      })
+      setKey(Date.now()) // Force re-render of LexicalComposer
       setLastSaved(null)
     }
 
     const handleFileSaved = (event, newFilePath) => {
+      console.log('File saved:', newFilePath) // Debug log
       setActiveDocument((prev) => (prev ? { ...prev, filePath: newFilePath, isNew: false } : null))
       setLastSaved(Date.now())
     }
 
     const handleFileRenamed = (event, newPath) => {
+      console.log('File renamed:', newPath) // Debug log
       setActiveDocument((prev) => (prev ? { ...prev, filePath: newPath } : null))
       setLastSaved(Date.now())
     }
@@ -190,16 +200,16 @@ export default function App() {
     return () => window.removeEventListener('wheel', handleWheel)
   }, [increaseZoom, decreaseZoom])
 
+  // Update handleMarkdownChange to:
+  const handleMarkdownChange = useCallback((markdown) => {
+    contentRef.current = markdown
+  }, [])
+
+  // Update handleSaveFile in FileToolbar to use the ref
+
   const initialConfig = {
     ...editorConfig,
-    editorState: activeDocument?.content
-      ? () => {
-          const root = $getRoot()
-          const paragraph = $createParagraphNode()
-          paragraph.append($createTextNode(activeDocument.content))
-          root.append(paragraph)
-        }
-      : null
+    editorState: null
   }
 
   if (!activeDocument) {
@@ -211,6 +221,8 @@ export default function App() {
     )
   }
 
+  console.log('Rendering editor with content length:', activeDocument.content?.length) // Debug log
+
   return (
     <LexicalComposer key={key} initialConfig={initialConfig}>
       <div className="relative min-h-screen w-full">
@@ -218,16 +230,16 @@ export default function App() {
           <FileToolbar filePath={activeDocument.filePath} />
 
           <main className="flex-1 flex flex-col min-h-screen overflow-auto relative">
-            <div className="flex-1 py-8 px-4 overflow-auto pb-16">
+            <div className="flex-1 py-8 px-16 overflow-auto pb-16">
               <div
-                className="mx-auto bg-white shadow-2xl"
+                className="bg-white shadow-2xl mx-auto"
                 style={{
                   transform: `scale(${zoomLevel / 100})`,
                   transformOrigin: 'top center',
                   transition: 'transform 0.2s ease-out',
-                  width: '794px',
-                  minHeight: '1123px',
-                  maxWidth: '794px'
+                  width: '100%',
+                  maxWidth: '1400px',
+                  minHeight: '1123px'
                 }}
               >
                 <div className="relative">
@@ -236,7 +248,12 @@ export default function App() {
                     <Toolbar />
                   </div>
                   <div className="relative">
-                    <Editor zoomLevel={zoomLevel} />
+                    <Editor
+                      key={`editor-${key}`}
+                      initialMarkdown={activeDocument.content}
+                      onMarkdownChange={handleMarkdownChange}
+                      zoomLevel={zoomLevel}
+                    />
                   </div>
                 </div>
               </div>

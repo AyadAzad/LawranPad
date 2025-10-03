@@ -1,5 +1,7 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import { $getRoot } from 'lexical'
+import { $convertToMarkdownString, TRANSFORMERS } from '@lexical/markdown'
+
+const ALL_TRANSFORMERS = [...TRANSFORMERS]
 
 const FileToolbar = ({ filePath }) => {
   const [editor] = useLexicalComposerContext()
@@ -10,15 +12,25 @@ const FileToolbar = ({ filePath }) => {
 
   const handleSaveFile = () => {
     editor.getEditorState().read(() => {
-      const data = $getRoot().getTextContent()
-      window.electron.ipcRenderer.send('save-file', { filePath, data })
+      try {
+        // Convert editor content to markdown
+        const markdown = $convertToMarkdownString(ALL_TRANSFORMERS)
+        window.electron.ipcRenderer.send('save-file', { filePath, data: markdown })
+      } catch (error) {
+        console.error('Error saving file:', error)
+      }
     })
   }
 
   const handleSaveFileAs = () => {
     editor.getEditorState().read(() => {
-      const data = $getRoot().getTextContent()
-      window.electron.ipcRenderer.send('save-file-as', data)
+      try {
+        // Convert editor content to markdown
+        const markdown = $convertToMarkdownString(ALL_TRANSFORMERS)
+        window.electron.ipcRenderer.send('save-file-as', markdown)
+      } catch (error) {
+        console.error('Error saving file:', error)
+      }
     })
   }
 
@@ -26,7 +38,8 @@ const FileToolbar = ({ filePath }) => {
     window.electron.ipcRenderer.send('exit-app')
   }
 
-  const buttonClasses = 'flex items-center justify-center w-12 h-12 rounded-lg hover:bg-green-200 transition-colors duration-200'
+  const buttonClasses =
+    'flex items-center justify-center w-12 h-12 rounded-lg hover:bg-green-200 transition-colors duration-200'
   const svgIconClasses = 'w-6 h-6 text-gray-600'
 
   return (
