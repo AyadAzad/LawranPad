@@ -1,38 +1,6 @@
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import { $convertToMarkdownString, TRANSFORMERS } from '@lexical/markdown'
 import ThemeToggleButton from './toolbar/ThemeToggleButton'
 
-const ALL_TRANSFORMERS = TRANSFORMERS;
-
-const FileToolbar = ({ filePath }) => {
-  const [editor] = useLexicalComposerContext()
-
-  const handleOpenFile = () => {
-    window.electron.ipcRenderer.send('open-file')
-  }
-
-  const handleSaveFile = () => {
-    editor.getEditorState().read(() => {
-      try {
-        const markdown = $convertToMarkdownString(ALL_TRANSFORMERS)
-        window.electron.ipcRenderer.send('save-file', { filePath, data: markdown })
-      } catch (error) {
-        console.error('Error saving file:', error)
-      }
-    })
-  }
-
-  const handleSaveFileAs = () => {
-    editor.getEditorState().read(() => {
-      try {
-        const markdown = $convertToMarkdownString(ALL_TRANSFORMERS)
-        window.electron.ipcRenderer.send('save-file-as', markdown)
-      } catch (error) {
-        console.error('Error saving file as:', error)
-      }
-    })
-  }
-
+const FileToolbar = ({ onSave, onOpen }) => {
   const handleExit = () => {
     window.electron.ipcRenderer.send('exit-app')
   }
@@ -44,7 +12,7 @@ const FileToolbar = ({ filePath }) => {
   return (
     <aside className="w-20 bg-white/80 dark:bg-gray-800/80 border-r border-gray-200 dark:border-gray-700 shadow-lg flex flex-col items-center p-4 gap-4">
       <div className="text-lg font-bold text-green-700 dark:text-green-400 mb-4">File</div>
-      <button onClick={handleOpenFile} className={buttonClasses} title="Open File">
+      <button onClick={onOpen} className={buttonClasses} title="Open File">
         <svg
           className={svgIconClasses}
           fill="none"
@@ -60,7 +28,7 @@ const FileToolbar = ({ filePath }) => {
           ></path>
         </svg>
       </button>
-      <button onClick={handleSaveFile} className={buttonClasses} title="Save File">
+      <button onClick={onSave} className={buttonClasses} title="Save File">
         <svg
           className={svgIconClasses}
           fill="none"
@@ -76,28 +44,7 @@ const FileToolbar = ({ filePath }) => {
           ></path>
         </svg>
       </button>
-      <button onClick={handleSaveFileAs} className={buttonClasses} title="Save As">
-        <svg
-          className={svgIconClasses}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M12 14l9-5-9-5-9 5 9 5z"
-          ></path>
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M12 14l6.16-3.422A12.083 12.083 0 0121 12c0 6.627-5.373 12-12 12S-3 18.627-3 12a12.083 12.083 0 012.84-6.422L12 14z"
-          ></path>
-        </svg>
-      </button>
+
       <div className="flex-grow"></div>
       <ThemeToggleButton />
       <button onClick={handleExit} className={buttonClasses} title="Exit">

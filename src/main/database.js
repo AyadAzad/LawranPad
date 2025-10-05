@@ -9,10 +9,7 @@ export function initDatabase(userDataPath) {
 
   console.log(`Database initialized at ${dbPath}`)
 
-  // Use WAL mode for better concurrency and performance.
   db.pragma('journal_mode = WAL')
-
-  // Create tables if they don't exist.
   createTables()
 }
 
@@ -22,6 +19,7 @@ function createTables() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL DEFAULT 'Untitled',
       content TEXT,
+      file_path TEXT UNIQUE,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -66,8 +64,6 @@ export function getDb() {
   return db
 }
 
-// Document CRUD operations
-
 export function listDocuments() {
   const stmt = db.prepare('SELECT id, title, updated_at FROM documents ORDER BY updated_at DESC')
   return stmt.all()
@@ -78,19 +74,33 @@ export function getDocument(id) {
   return stmt.get(id)
 }
 
-export function createDocument({ title = 'Untitled', content = '' } = {}) {
+export function findDocumentByPath(filePath) {
+  const stmt = db.prepare('SELECT * FROM documents WHERE file_path = ?')
+  return stmt.get(filePath)
+}
+
+export function createDocument({ title = 'Untitled', content = '', filePath = null } = {}) {
   const stmt = db.prepare(
-    "INSERT INTO documents (title, content, created_at, updated_at) VALUES (?, ?, datetime('now'), datetime('now'))"
+    "INSERT INTO documents (title, content, file_path, created_at, updated_at) VALUES (?, ?, ?, datetime('now'), datetime('now'))"
   )
-  const info = stmt.run(title, content)
+  const info = stmt.run(title, content, filePath)
   return getDocument(info.lastInsertRowid)
 }
 
-export function updateDocument(id, { title, content }) {
-  const stmt = db.prepare(
-    "UPDATE documents SET title = ?, content = ?, updated_at = datetime('now') WHERE id = ?"
-  )
-  const info = stmt.run(title, content, id)
+export function updateDocument(id, updates) {
+  const allowedFields = ['title', 'content', 'file_path']
+  const updateEntries = Object.entries(updates).filter(([key]) => allowedFields.includes(key))
+
+  if (updateEntries.length === 0) {
+    return getDocument(id)
+  }
+
+  const setClause = updateEntries.map(([key]) => `${key} = ?`).join(', ')
+  const params = updateEntries.map(([, value]) => value)
+
+  const stmt = db.prepare(`UPDATE documents SET ${setClause}, updated_at = datetime('now') WHERE id = ?`)
+  const info = stmt.run(...params, id)
+
   if (info.changes > 0) {
     return getDocument(id)
   }

@@ -1,30 +1,28 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
-import { join, dirname, extname } from 'path'
+import { join, dirname, basename } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { readFile, writeFile, rename } from 'fs'
+import { readFile, writeFile } from 'fs/promises'
 import {
   initDatabase,
   listDocuments,
   getDocument,
   createDocument,
   updateDocument,
-  deleteDocument
+  deleteDocument,
+  findDocumentByPath
 } from './database.js'
 
 function createWindow() {
-  // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1200,
+    height: 800,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon: join(__dirname, '../../resources/icon.png') } : {}),
     ...(process.platform === 'win32' ? { icon: join(__dirname, '../../resources/icon.ico') } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
-      nodeIntegration: true,
-      contextIsolation: false
+      sandbox: false
     }
   })
 
@@ -37,8 +35,6 @@ function createWindow() {
     return { action: 'deny' }
   })
 
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
@@ -46,132 +42,79 @@ function createWindow() {
   }
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app
   .whenReady()
   .then(() => {
-    // Set app user model id for windows
     electronApp.setAppUserModelId('com.lawran.lawranpad')
 
-    // Initialize database
     try {
       initDatabase(app.getPath('userData'))
     } catch (err) {
       console.error('Failed to initialize database:', err)
-      dialog.showErrorBox(
-        'Database Error',
-        'Could not initialize the database. The application will now close.'
-      )
+      dialog.showErrorBox('Database Error', 'Could not initialize the database.')
       app.quit()
       return
     }
 
-    // Default open or close DevTools by F12 in development
-    // and ignore CommandOrControl + R in production.
     app.on('browser-window-created', (_, window) => {
       optimizer.watchWindowShortcuts(window)
     })
 
-    // --- Database IPC Handlers ---
+    // --- New Database-Centric IPC Handlers ---
+
     ipcMain.handle('get-documents', () => listDocuments())
-    ipcMain.handle('get-document', (event, id) => getDocument(id))
-    ipcMain.handle('create-document', (event, data) => createDocument(data))
-    ipcMain.handle('update-document', (event, { id, data }) => updateDocument(id, data))
-    ipcMain.handle('delete-document', (event, id) => deleteDocument(id))
+    ipcMain.handle('get-document-content', (_, id) => getDocument(id))
+    ipcMain.handle('create-new-document', () => createDocument())
+    ipcMain.handle('delete-document', (_, id) => deleteDocument(id))
 
-    // --- Legacy File-System IPC Handlers ---
-    ipcMain.on('open-file', (event) => {
-      dialog
-        .showOpenDialog({
-          properties: ['openFile'],
-          filters: [{ name: 'Documents', extensions: ['txt', 'md', 'docx'] }]
-        })
-        .then((result) => {
-          if (!result.canceled) {
-            const filePath = result.filePaths[0]
-            readFile(filePath, 'utf-8', (err, data) => {
-              if (err) {
-                console.log(err)
-                return
-              }
-              event.sender.send('file-opened', { filePath, data })
-            })
-          }
-        })
-        .catch((err) => {
-          console.log(err)
-        })
-    })
+    ipcMain.handle('open-file-dialog', async (event) => {
+      const { canceled, filePaths } = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: 'Markdown', extensions: ['md', 'txt'] }]
+      })
 
-    ipcMain.on('save-file', (event, { filePath, data }) => {
-      if (filePath) {
-        writeFile(filePath, data, (err) => {
-          if (err) {
-            console.log(err)
-          } else {
-            event.sender.send('file-saved', filePath)
-          }
-        })
+      if (canceled || filePaths.length === 0) {
+        return null
+      }
+
+      const filePath = filePaths[0]
+      let doc = findDocumentByPath(filePath)
+
+      if (doc) {
+        return doc
       } else {
-        dialog
-          .showSaveDialog({
-            filters: [{ name: 'Documents', extensions: ['txt', 'md', 'docx'] }]
-          })
-          .then((result) => {
-            if (!result.canceled) {
-              const newFilePath = result.filePath
-              writeFile(newFilePath, data, (err) => {
-                if (err) {
-                  console.log(err)
-                  return
-                }
-                event.sender.send('file-saved', newFilePath)
-              })
-            }
-          })
-          .catch((err) => {
-            console.log(err)
-          })
+        const content = await readFile(filePath, 'utf-8')
+        const title = basename(filePath, '.md').replace(/[-_]/g, ' ')
+        return createDocument({ title, content, filePath })
       }
     })
 
-    ipcMain.on('save-file-as', (event, { data, defaultName }) => {
-      dialog
-        .showSaveDialog({
-          defaultPath: defaultName ? `${defaultName}.txt` : 'Untitled.txt',
-          filters: [{ name: 'Documents', extensions: ['txt', 'md', 'docx'] }]
+    ipcMain.handle('save-document', async (event, { id, content }) => {
+      const doc = getDocument(id)
+      if (!doc) throw new Error('Document not found')
+
+      if (doc.file_path) {
+        await writeFile(doc.file_path, content, 'utf-8')
+        return updateDocument(id, { content })
+      } else {
+        // If no file path, trigger save-as dialog
+        const { canceled, filePath } = await dialog.showSaveDialog({
+          defaultPath: `${doc.title}.md`,
+          filters: [{ name: 'Markdown', extensions: ['md', 'txt'] }]
         })
-        .then((result) => {
-          if (!result.canceled) {
-            const filePath = result.filePath
-            writeFile(filePath, data, (err) => {
-              if (err) {
-                console.log(err)
-                return
-              }
-              event.sender.send('file-saved', filePath)
-            })
-          }
-        })
-        .catch((err) => {
-          console.log(err)
-        })
+
+        if (canceled || !filePath) {
+          return doc // Return original doc if save is cancelled
+        }
+
+        await writeFile(filePath, content, 'utf-8')
+        const title = basename(filePath, '.md').replace(/[-_]/g, ' ')
+        return updateDocument(id, { title, content, file_path: filePath })
+      }
     })
 
-    ipcMain.on('rename-file', (event, { oldPath, newName }) => {
-      const dir = dirname(oldPath)
-      const ext = extname(oldPath)
-      const newPath = join(dir, `${newName}${ext}`)
-
-      rename(oldPath, newPath, (err) => {
-        if (err) {
-          console.log('Error renaming file:', err)
-          return
-        }
-        event.sender.send('file-renamed', newPath)
-      })
+    ipcMain.handle('rename-document', async (event, { id, newTitle }) => {
+      return updateDocument(id, { title: newTitle })
     })
 
     createWindow()
@@ -182,14 +125,10 @@ app
   })
   .catch((err) => {
     console.error('Application startup failed:', err)
-    dialog.showErrorBox(
-      'Application Error',
-      'A critical error occurred during startup. The application will now close.'
-    )
+    dialog.showErrorBox('Application Error', 'A critical error occurred during startup.')
     app.quit()
   })
 
-// Quit when all windows are closed, except on macOS.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-const Dashboard = ({ onNewDocument, onOpenRecentDocument }) => {
+const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) => {
   const [recentFiles, setRecentFiles] = useState([])
 
   useEffect(() => {
@@ -16,18 +16,6 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument }) => {
     getRecentFiles()
   }, [])
 
-  const handleNewDocument = () => {
-    onNewDocument()
-  }
-
-  const handleOpenFile = () => {
-    window.electron.ipcRenderer.send('open-file')
-  }
-
-  const handleOpenRecentDocument = (id) => {
-    onOpenRecentDocument(id)
-  }
-
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
       <div className="flex-grow flex items-center justify-center">
@@ -40,7 +28,7 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
             <div
               className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg hover:shadow-2xl dark:hover:shadow-blue-500/20 transition-shadow duration-300 cursor-pointer"
-              onClick={handleNewDocument}
+              onClick={onNewDocument}
             >
               <div className="flex items-center justify-center h-16 w-16 rounded-full bg-blue-500 text-white mb-6">
                 <svg
@@ -63,7 +51,7 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument }) => {
             </div>
             <div
               className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg hover:shadow-2xl dark:hover:shadow-green-500/20 transition-shadow duration-300 cursor-pointer"
-              onClick={handleOpenFile}
+              onClick={onOpenFileDialog}
             >
               <div className="flex items-center justify-center h-16 w-16 rounded-full bg-green-500 text-white mb-6">
                 <svg
@@ -95,7 +83,7 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument }) => {
                     <li
                       key={file.id}
                       className="p-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                      onClick={() => handleOpenRecentDocument(file.id)}
+                      onClick={() => onOpenRecentDocument(file.id)}
                     >
                       <div>
                         <p className="text-lg font-medium text-gray-800 dark:text-gray-100">{file.title}</p>
