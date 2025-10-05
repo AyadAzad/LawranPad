@@ -19,12 +19,12 @@ const OutputToolbar = () => {
   }
 
   const buttonClasses =
-    'flex items-center justify-center w-12 h-12 rounded-lg hover:bg-blue-200 transition-colors duration-200'
-  const svgIconClasses = 'w-6 h-6 text-gray-600'
+    'flex items-center justify-center w-12 h-12 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors duration-200'
+  const svgIconClasses = 'w-6 h-6 text-gray-600 dark:text-gray-300'
 
   return (
-    <aside className="w-20 bg-white/80 border-l border-gray-200 shadow-lg flex flex-col items-center p-4 gap-4">
-      <div className="text-lg font-bold text-blue-700 mb-4">Output</div>
+    <aside className="w-20 bg-white/80 dark:bg-gray-800/80 border-l border-gray-200 dark:border-gray-700 shadow-lg flex flex-col items-center p-4 gap-4">
+      <div className="text-lg font-bold text-blue-700 dark:text-blue-400 mb-4">Output</div>
       <button onClick={handleExportToPDF} className={buttonClasses} title="Export as PDF">
         <svg
           className={svgIconClasses}

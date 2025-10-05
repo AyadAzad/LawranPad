@@ -114,7 +114,7 @@ const Footer = ({
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-4 py-1 bg-gray-100 border-t border-gray-200 text-sm text-gray-700">
+    <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-4 py-1 bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
       <div className="flex items-center gap-4">
         {isRenaming ? (
           <input
@@ -123,7 +123,7 @@ const Footer = ({
             onChange={(e) => setRenameValue(e.target.value)}
             onBlur={handleRename}
             onKeyDown={(e) => e.key === 'Enter' && handleRename()}
-            className="font-semibold bg-gray-200 rounded px-1 -my-0.5"
+            className="font-semibold bg-gray-200 dark:bg-gray-700 rounded px-1 -my-0.5"
             autoFocus
           />
         ) : (
@@ -131,29 +131,29 @@ const Footer = ({
             <span className="font-semibold cursor-pointer">{fileName}</span>
           </div>
         )}
-        <div className="w-px h-4 bg-gray-300"></div>
+        <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
         <span>{wordCount} words</span>
         <span>{charCount} characters</span>
-        <div className="w-px h-4 bg-gray-300"></div>
+        <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
         <span>{lastSavedText}</span>
       </div>
       <div className="flex items-center gap-4">
-        <div className="flex items-center bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+        <div className="flex items-center bg-white dark:bg-gray-700 rounded-md shadow-sm border border-gray-200 dark:border-gray-600 overflow-hidden">
           <button
             onClick={onZoomOut}
             disabled={zoomLevel <= 25}
-            className="p-2 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-r border-gray-200"
+            className="p-2 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-r border-gray-200 dark:border-gray-600"
             title="Zoom Out (Ctrl/Cmd + -)"
             aria-label="Zoom Out"
           >
-            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
             </svg>
           </button>
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="px-3 py-2 min-w-[80px] text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors border-r border-gray-200 flex items-center justify-center"
+              className="px-3 py-2 min-w-[80px] text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors border-r border-gray-200 dark:border-gray-600 flex items-center justify-center"
               aria-haspopup="true"
               aria-expanded={isDropdownOpen}
               title="Select zoom level"
@@ -164,25 +164,25 @@ const Footer = ({
               </svg>
             </button>
             {isDropdownOpen && (
-              <div className="absolute bottom-full right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px] max-h-60 overflow-y-auto z-50">
+              <div className="absolute bottom-full right-0 mb-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg py-1 min-w-[120px] max-h-60 overflow-y-auto z-50">
                 {presets.map((preset) => (
                   <button
                     key={preset}
                     onClick={() => handlePresetSelect(preset)}
                     className={`w-full px-4 py-2 text-left text-sm transition-colors ${
                       preset === zoomLevel
-                        ? 'bg-blue-50 text-blue-600 font-medium'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 font-medium'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
                     }`}
                   >
                     {preset}%
-                    {preset === 100 && <span className="text-xs text-gray-400 ml-2">(Default)</span>}
+                    {preset === 100 && <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">(Default)</span>}
                   </button>
                 ))}
-                <div className="border-t border-gray-200 my-1"></div>
+                <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
                 <button
                   onClick={handleReset}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 >
                   Reset to 100%
                 </button>
@@ -192,21 +192,21 @@ const Footer = ({
           <button
             onClick={onZoomIn}
             disabled={zoomLevel >= 300}
-            className="p-2 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-r border-gray-200"
+            className="p-2 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-r border-gray-200 dark:border-gray-600"
             title="Zoom In (Ctrl/Cmd + +)"
             aria-label="Zoom In"
           >
-            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </button>
           <button
             onClick={handleReset}
-            className="p-2 hover:bg-gray-50 transition-colors"
+            className="p-2 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             title="Fit to Width (Ctrl/Cmd + 0)"
             aria-label="Reset zoom to 100%"
           >
-            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -216,7 +216,7 @@ const Footer = ({
             </svg>
           </button>
         </div>
-        <div className="w-px h-4 bg-gray-300"></div>
+        <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
           <span className="font-semibold">Ready</span>

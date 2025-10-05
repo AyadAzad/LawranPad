@@ -1,6 +1,6 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { $getSelection, $isRangeSelection } from 'lexical'
-import { useCallback, useState, useEffect } from 'react'
+import { useCallback, useState, useEffect, useRef } from 'react'
 
 const LINE_SPACING_OPTIONS = [
   { value: '1', label: 'Single', displayValue: '1.0' },
@@ -15,8 +15,8 @@ const LineSpacingDropdown = () => {
   const [editor] = useLexicalComposerContext()
   const [currentSpacing, setCurrentSpacing] = useState('1')
   const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef(null)
 
-  // Track the current line spacing of selected text
   useEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {
       editorState.read(() => {
@@ -53,35 +53,44 @@ const LineSpacingDropdown = () => {
     [editor]
   )
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`
           w-32 h-10 px-3 rounded-lg border-2 transition-all duration-200
           flex items-center justify-between gap-2
-          ${isOpen ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-500'}
-          focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50
+          ${isOpen ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/50' : 'border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400'}
+          focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-500 focus:ring-opacity-50
         `}
       >
         <span className="flex items-center gap-2">
           <svg
             viewBox="0 0 24 24"
-            className="w-5 h-5 text-gray-600"
+            className="w-5 h-5 text-gray-600 dark:text-gray-300"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
           >
             <path d="M1 6h22M1 12h22M1 18h22" />
           </svg>
-          <span className="text-sm font-medium text-gray-700">
-            {LINE_SPACING_OPTIONS.find((opt) => opt.value === currentSpacing)?.displayValue ||
-              '1.0'}
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+            {LINE_SPACING_OPTIONS.find((opt) => opt.value === currentSpacing)?.displayValue || '1.0'}
           </span>
         </span>
         <svg
-          className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -92,7 +101,7 @@ const LineSpacingDropdown = () => {
 
       {isOpen && (
         <div
-          className="absolute top-full left-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50"
+          className="absolute top-full left-0 mt-1 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50"
           style={{
             animation: 'slideIn 0.2s ease-out',
             transformOrigin: 'top'
@@ -104,12 +113,12 @@ const LineSpacingDropdown = () => {
               onClick={() => handleSpacingChange(value)}
               className={`
                 w-full px-3 py-2 text-sm flex items-center justify-between gap-2
-                transition-all duration-200 hover:bg-blue-50
-                ${currentSpacing === value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}
+                transition-all duration-200 hover:bg-blue-50 dark:hover:bg-blue-900/50
+                ${currentSpacing === value ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-200'}
               `}
             >
               <span className="font-medium">{label}</span>
-              <span className="text-xs text-gray-500">{displayValue}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{displayValue}</span>
             </button>
           ))}
         </div>

@@ -1,7 +1,8 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { $convertToMarkdownString, TRANSFORMERS } from '@lexical/markdown'
+import ThemeToggleButton from './toolbar/ThemeToggleButton'
 
-const ALL_TRANSFORMERS = [...TRANSFORMERS]
+const ALL_TRANSFORMERS = TRANSFORMERS;
 
 const FileToolbar = ({ filePath }) => {
   const [editor] = useLexicalComposerContext()
@@ -13,7 +14,6 @@ const FileToolbar = ({ filePath }) => {
   const handleSaveFile = () => {
     editor.getEditorState().read(() => {
       try {
-        // Convert editor content to markdown
         const markdown = $convertToMarkdownString(ALL_TRANSFORMERS)
         window.electron.ipcRenderer.send('save-file', { filePath, data: markdown })
       } catch (error) {
@@ -25,11 +25,10 @@ const FileToolbar = ({ filePath }) => {
   const handleSaveFileAs = () => {
     editor.getEditorState().read(() => {
       try {
-        // Convert editor content to markdown
         const markdown = $convertToMarkdownString(ALL_TRANSFORMERS)
         window.electron.ipcRenderer.send('save-file-as', markdown)
       } catch (error) {
-        console.error('Error saving file:', error)
+        console.error('Error saving file as:', error)
       }
     })
   }
@@ -39,12 +38,12 @@ const FileToolbar = ({ filePath }) => {
   }
 
   const buttonClasses =
-    'flex items-center justify-center w-12 h-12 rounded-lg hover:bg-green-200 transition-colors duration-200'
-  const svgIconClasses = 'w-6 h-6 text-gray-600'
+    'flex items-center justify-center w-12 h-12 rounded-lg hover:bg-green-200 dark:hover:bg-green-700 transition-colors duration-200'
+  const svgIconClasses = 'w-6 h-6 text-gray-600 dark:text-gray-300'
 
   return (
-    <aside className="w-20 bg-white/80 border-r border-gray-200 shadow-lg flex flex-col items-center p-4 gap-4">
-      <div className="text-lg font-bold text-green-700 mb-4">File</div>
+    <aside className="w-20 bg-white/80 dark:bg-gray-800/80 border-r border-gray-200 dark:border-gray-700 shadow-lg flex flex-col items-center p-4 gap-4">
+      <div className="text-lg font-bold text-green-700 dark:text-green-400 mb-4">File</div>
       <button onClick={handleOpenFile} className={buttonClasses} title="Open File">
         <svg
           className={svgIconClasses}
@@ -99,6 +98,8 @@ const FileToolbar = ({ filePath }) => {
           ></path>
         </svg>
       </button>
+      <div className="flex-grow"></div>
+      <ThemeToggleButton />
       <button onClick={handleExit} className={buttonClasses} title="Exit">
         <svg
           className={svgIconClasses}

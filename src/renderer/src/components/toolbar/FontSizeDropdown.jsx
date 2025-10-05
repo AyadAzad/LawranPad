@@ -37,13 +37,13 @@ const FontSizeDropdown = () => {
 
   return (
     <select
-      className="px-2 py-1 border rounded hover:border-blue-500 focus:border-blue-500 focus:outline-none min-w-[80px]"
+      className="h-10 px-2 py-1 border-2 rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-blue-500 dark:hover:border-blue-400 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none min-w-[80px] transition-colors"
       title="Font Size"
       onChange={handleChange}
       value={currentSize}
     >
       {Object.entries(FONT_SIZES).map(([className, size]) => (
-        <option key={className} value={className}>
+        <option key={className} value={className} className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
           {size}
         </option>
       ))}

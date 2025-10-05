@@ -32,6 +32,7 @@ const HighlightColorPicker = () => {
     if (
       popoverRef.current &&
       !popoverRef.current.contains(event.target) &&
+      buttonRef.current &&
       !buttonRef.current.contains(event.target)
     ) {
       setIsOpen(false)
@@ -69,7 +70,7 @@ const HighlightColorPicker = () => {
         ref={buttonRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded hover:bg-gray-100 transition-colors flex items-center gap-2"
+        className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 text-gray-800 dark:text-gray-200"
         title="Highlight Color"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
@@ -80,7 +81,7 @@ const HighlightColorPicker = () => {
           />
         </svg>
         <div
-          className="w-4 h-4 rounded border border-gray-300"
+          className="w-4 h-4 rounded border border-gray-300 dark:border-gray-500"
           style={{ backgroundColor: currentColor }}
         />
       </button>
@@ -88,7 +89,7 @@ const HighlightColorPicker = () => {
       {isOpen && (
         <div
           ref={popoverRef}
-          className="absolute top-full left-0 mt-1 p-2 bg-white rounded-lg shadow-lg border border-gray-100 z-50"
+          className="absolute top-full left-0 mt-1 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 z-50"
           style={{
             width: '200px',
             animation: 'slideIn 0.2s ease-out',
@@ -101,8 +102,8 @@ const HighlightColorPicker = () => {
                 key={color}
                 onClick={() => handleColorChange(color)}
                 className={`w-10 h-10 rounded transition-all hover:scale-105 focus:outline-none ${
-                  currentColor === color ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-                } ${color === 'transparent' ? 'bg-white border border-gray-300' : ''}`}
+                  currentColor === color ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 ring-offset-white dark:ring-offset-gray-800' : ''
+                } ${color === 'transparent' ? 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600' : ''}`}
                 style={{ backgroundColor: color }}
                 title={label}
               >

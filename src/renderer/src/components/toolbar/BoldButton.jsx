@@ -11,7 +11,7 @@ const BoldButton = () => {
   return (
     <button
       onClick={handleClick}
-      className="p-2 rounded hover:bg-gray-100 transition-colors"
+      className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-800 dark:text-gray-200"
       title="Bold"
     >
       <svg

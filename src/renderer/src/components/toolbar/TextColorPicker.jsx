@@ -37,6 +37,7 @@ const TextColorPicker = () => {
     if (
       popoverRef.current &&
       !popoverRef.current.contains(event.target) &&
+      buttonRef.current &&
       !buttonRef.current.contains(event.target)
     ) {
       setIsOpen(false)
@@ -74,7 +75,7 @@ const TextColorPicker = () => {
         ref={buttonRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded hover:bg-gray-100 transition-colors flex items-center gap-2"
+        className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 text-gray-800 dark:text-gray-200"
         title="Text Color"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
@@ -85,7 +86,7 @@ const TextColorPicker = () => {
           />
         </svg>
         <div
-          className="w-4 h-4 rounded border border-gray-300"
+          className="w-4 h-4 rounded border border-gray-300 dark:border-gray-500"
           style={{ backgroundColor: currentColor }}
         />
       </button>
@@ -93,7 +94,7 @@ const TextColorPicker = () => {
       {isOpen && (
         <div
           ref={popoverRef}
-          className="absolute top-full left-0 mt-1 p-2 bg-white rounded-lg shadow-lg border border-gray-100 z-50"
+          className="absolute top-full left-0 mt-1 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 z-50"
           style={{
             width: '232px',
             animation: 'slideIn 0.2s ease-out',
@@ -106,7 +107,7 @@ const TextColorPicker = () => {
                 key={color}
                 onClick={() => handleColorChange(color)}
                 className={`w-5 h-5 rounded transition-transform hover:scale-110 focus:outline-none ${
-                  currentColor === color ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+                  currentColor === color ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 ring-offset-white dark:ring-offset-gray-800' : ''
                 }`}
                 style={{ backgroundColor: color }}
                 title={color}
@@ -117,7 +118,7 @@ const TextColorPicker = () => {
             type="color"
             value={currentColor}
             onChange={(e) => handleColorChange(e.target.value)}
-            className="mt-2 w-full h-8 cursor-pointer"
+            className="mt-2 w-full h-8 cursor-pointer bg-white dark:bg-gray-800"
           />
         </div>
       )}
