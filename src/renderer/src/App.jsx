@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import Editor from './components/Editor'
 import Toolbar from './components/Toolbar'
@@ -15,7 +15,7 @@ import { ThemeProvider } from './contexts/ThemeContext'
 
 const editorConfig = {
   namespace: 'MyEditor',
-  onError: (error) => console.error(error),
+  onError: (error) => console.error('Lexical Error:', error),
   theme: {
     text: {
       bold: 'font-bold',
@@ -105,7 +105,7 @@ function AppContent() {
   }, [loadDocument])
 
   const handleSaveDocument = useCallback(async () => {
-    if (!activeDocument) return
+    if (!activeDocument?.id) return
     try {
       const updatedDoc = await window.electron.ipcRenderer.invoke('save-document', {
         id: activeDocument.id,
@@ -118,11 +118,11 @@ function AppContent() {
     } catch (error) {
       console.error('Failed to save document:', error)
     }
-  }, [activeDocument])
+  }, [activeDocument?.id])
 
   const handleRenameDocument = useCallback(
     async (newTitle) => {
-      if (!activeDocument) return
+      if (!activeDocument?.id) return
       try {
         const updatedDoc = await window.electron.ipcRenderer.invoke('rename-document', {
           id: activeDocument.id,
@@ -135,7 +135,7 @@ function AppContent() {
         console.error('Failed to rename document:', error)
       }
     },
-    [activeDocument]
+    [activeDocument?.id]
   )
 
   const handleMarkdownChange = useCallback((markdown) => {

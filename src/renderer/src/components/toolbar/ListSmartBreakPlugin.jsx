@@ -1,49 +1,61 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { useEffect } from 'react'
-import { $getSelection, $isRangeSelection, KEY_DOWN_COMMAND, OUTDENT_CONTENT_COMMAND } from 'lexical'
-import { $isListItemNode } from '@lexical/list'
+import {
+  $getSelection,
+  $isRangeSelection,
+  KEY_DOWN_COMMAND,
+  COMMAND_PRIORITY_HIGH,
+  $createParagraphNode
+} from 'lexical'
+import { $isListItemNode, $isListNode } from '@lexical/list'
+import { $setBlocksType } from '@lexical/selection'
+import { $findMatchingParent } from '@lexical/utils'
 
 function ListSmartBreakPlugin() {
   const [editor] = useLexicalComposerContext()
 
   useEffect(() => {
-    const onKeyDown = (event) => {
-      const { key } = event
-      if (key === 'Enter') {
-        const selection = $getSelection()
-        if ($isRangeSelection(selection) && selection.isCollapsed()) {
-          const anchor = selection.anchor
-          const anchorNode = anchor.getNode()
+    const command = editor.registerCommand(
+      KEY_DOWN_COMMAND,
+      (event) => {
+        if (event.key === 'Enter') {
+          return editor.update(() => {
+            const selection = $getSelection()
+            if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
+              return false
+            }
 
-          const listItem = $findMatchingParent(anchorNode, $isListItemNode)
+            const anchorNode = selection.anchor.getNode()
+            const listItem = $findMatchingParent(anchorNode, $isListItemNode)
 
-          if (listItem && listItem.getTextContent().length === 0) {
-            // Dispatch outdent command to break out of the list
-            editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined)
-            event.preventDefault() // Prevent default Enter behavior
-            return true // Indicate command was handled
-          }
+            // If the list item is empty, break out of the list
+            if (listItem && listItem.getTextContent().trim() === '') {
+              // Check if the list item is the only child of its parent list
+              const parentList = $findMatchingParent(listItem, $isListNode)
+              if (parentList && parentList.getChildrenSize() === 1) {
+                // If it's the only item, remove the entire list
+                parentList.remove()
+                return true
+              }
+
+              // Otherwise, just convert the block to a paragraph
+              $setBlocksType(selection, () => $createParagraphNode())
+              return true
+            }
+
+            return false
+          })
         }
-      }
-      return false // Command not handled
-    }
+        return false
+      },
+      COMMAND_PRIORITY_HIGH
+    )
 
-    // Register the keydown listener with a medium priority
-    return editor.registerCommand(KEY_DOWN_COMMAND, onKeyDown, 2)
+    return () => {
+      command()
+    }
   }, [editor])
 
-  return null
-}
-
-// Helper to find parent node of a specific type
-function $findMatchingParent(startingNode, predicate) {
-  let node = startingNode
-  while (node !== null) {
-    if (predicate(node)) {
-      return node
-    }
-    node = node.getParent()
-  }
   return null
 }
 

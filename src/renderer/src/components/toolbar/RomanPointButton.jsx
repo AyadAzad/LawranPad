@@ -1,17 +1,63 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import { INSERT_ORDERED_LIST_COMMAND } from '@lexical/list'
+import {
+  INSERT_ORDERED_LIST_COMMAND,
+  REMOVE_LIST_COMMAND,
+  $isListNode
+} from '@lexical/list'
+import { $getSelection, $isRangeSelection } from 'lexical'
+import { $findMatchingParent } from '@lexical/utils'
+import { useState, useEffect, useCallback } from 'react'
 
 const RomanPointButton = () => {
   const [editor] = useLexicalComposerContext()
+  const [isActive, setIsActive] = useState(false)
+
+  const updateState = useCallback(() => {
+    editor.getEditorState().read(() => {
+      const selection = $getSelection()
+      if ($isRangeSelection(selection)) {
+        const listNode = $findMatchingParent(selection.anchor.getNode(), (node) => $isListNode(node))
+        if (listNode && listNode.getListType() === 'number') {
+          const style = listNode.getStyle()
+          setIsActive(style ? style.includes('upper-roman') : false)
+        } else {
+          setIsActive(false)
+        }
+      }
+    })
+  }, [editor])
+
+  useEffect(() => {
+    return editor.registerUpdateListener(() => {
+      updateState()
+    })
+  }, [editor, updateState])
 
   const handleClick = () => {
-    editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, 'roman')
+    if (isActive) {
+      editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined)
+    } else {
+      editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)
+      editor.update(() => {
+        const selection = $getSelection()
+        if ($isRangeSelection(selection)) {
+          const listNode = $findMatchingParent(selection.anchor.getNode(), $isListNode)
+          if (listNode) {
+            listNode.setStyle('list-style-type: upper-roman;')
+          }
+        }
+      })
+    }
   }
 
   return (
     <button
       onClick={handleClick}
-      className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-800 dark:text-gray-200"
+      className={`p-2 rounded transition-colors text-gray-800 dark:text-gray-200 ${
+        isActive
+          ? 'bg-gray-200 dark:bg-gray-700'
+          : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+      }`}
       title="Roman Points"
     >
       <svg
