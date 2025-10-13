@@ -32,7 +32,8 @@
     "@lexical/utils": "^0.35.0",
     "@tailwindcss/vite": "^4.1.13",
     "better-sqlite3": "^12.4.1",
-    "lexical": "^0.35.0"
+    "lexical": "^0.35.0",
+    "prop-types": "^15.8.1"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^1.0.2",

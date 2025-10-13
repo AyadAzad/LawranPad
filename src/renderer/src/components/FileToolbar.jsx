@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types'
 import ThemeToggleButton from './toolbar/ThemeToggleButton'
 
 const FileToolbar = ({ onSave, onOpen }) => {
@@ -65,6 +66,11 @@ const FileToolbar = ({ onSave, onOpen }) => {
       </button>
     </aside>
   )
+}
+
+FileToolbar.propTypes = {
+  onSave: PropTypes.func.isRequired,
+  onOpen: PropTypes.func.isRequired
 }
 
 export default FileToolbar

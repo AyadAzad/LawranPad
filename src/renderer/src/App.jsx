@@ -15,7 +15,6 @@ import { ThemeProvider } from './contexts/ThemeContext'
 
 const editorConfig = {
   namespace: 'MyEditor',
-  onError: (error) => console.error('Lexical Error:', error),
   theme: {
     text: {
       bold: 'font-bold',
@@ -41,8 +40,7 @@ const editorConfig = {
     quote:
       'border-l-4 border-blue-500 pl-4 py-2 my-4 bg-blue-50 dark:bg-blue-900/20 italic text-gray-700 dark:text-gray-400',
     code: 'bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono',
-    codeblock:
-      'bg-gray-100 dark:bg-gray-800 p-4 rounded-lg font-mono text-sm mb-4 overflow-x-auto'
+    codeblock: 'bg-gray-100 dark:bg-gray-800 p-4 rounded-lg font-mono text-sm mb-4 overflow-x-auto'
   },
   nodes: [
     HeadingNode,
@@ -86,7 +84,7 @@ function AppContent() {
     try {
       const newDoc = await window.electron.ipcRenderer.invoke('create-new-document')
       if (newDoc) {
-        loadDocument(newDoc.id)
+        await loadDocument(newDoc.id)
       }
     } catch (error) {
       console.error('Failed to create new document:', error)
@@ -97,7 +95,7 @@ function AppContent() {
     try {
       const doc = await window.electron.ipcRenderer.invoke('open-file-dialog')
       if (doc) {
-        loadDocument(doc.id)
+        await loadDocument(doc.id)
       }
     } catch (error) {
       console.error('Failed to open file dialog:', error)

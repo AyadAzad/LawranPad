@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
+import PropTypes from 'prop-types'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
+import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin'
@@ -10,7 +12,25 @@ import { TablePlugin } from '@lexical/react/LexicalTablePlugin'
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin'
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin'
 import ListSmartBreakPlugin from './toolbar/ListSmartBreakPlugin'
-import { $convertFromMarkdownString, TRANSFORMERS } from '@lexical/markdown'
+import {
+  $convertFromMarkdownString,
+  $convertToMarkdownString,
+  HEADING,
+  QUOTE,
+  CODE,
+  LINK,
+  BOLD_ITALIC_STAR,
+  BOLD_ITALIC_UNDERSCORE,
+  BOLD_STAR,
+  BOLD_UNDERSCORE,
+  ITALIC_STAR,
+  ITALIC_UNDERSCORE,
+  STRIKETHROUGH,
+  CHECK_LIST,
+  INLINE_CODE,
+  UNORDERED_LIST,
+  ORDERED_LIST
+} from '@lexical/markdown'
 import { $getRoot, $createParagraphNode } from 'lexical'
 
 const styles = `
@@ -22,17 +42,93 @@ const styles = `
   }
 
   .editor-content {
-    color: #1f2937; /* text-gray-800 */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    line-height: 1.6;
+    color: #1f2937;
   }
-  .dark .editor-content {
-    color: #d1d5db; /* text-gray-300 */
+
+  .editor-content h1, .editor-content h2, .editor-content h3,
+  .editor-content h4, .editor-content h5, .editor-content h6 {
+    font-weight: 600;
+    color: #111827;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+  }
+
+  .editor-content h1 {
+    font-size: 2em;
+    margin-top: 0;
+  }
+
+  .editor-content h2 {
+    font-size: 1.5em;
+  }
+
+  .editor-content h3 {
+    font-size: 1.25em;
+  }
+
+  .editor-content p {
+    margin-bottom: 1rem;
+  }
+
+  .editor-content p:last-child {
+    margin-bottom: 0;
+  }
+
+  .editor-content ul, .editor-content ol {
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+  }
+
+  .editor-content li {
+    margin-bottom: 0.25rem;
+  }
+
+  .editor-content code {
+    background-color: #f3f4f6;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 0.875em;
+  }
+
+  .editor-content pre {
+    background-color: #f3f4f6;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+  }
+
+  .editor-content pre code {
+    background-color: transparent;
+    padding: 0;
+  }
+
+  .editor-content blockquote {
+    border-left: 4px solid #3b82f6;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: #4b5563;
+    font-style: italic;
   }
 
   .editor-content a {
-    color: #3b82f6; /* text-blue-500 */
+    color: #3b82f6;
+    text-decoration: underline;
   }
-  .dark .editor-content a {
-    color: #60a5fa; /* text-blue-400 */
+
+  .editor-content a:hover {
+    color: #2563eb;
+  }
+
+  .editor-content strong {
+    font-weight: 600;
+  }
+
+  .editor-content em {
+    font-style: italic;
   }
 
   .editor-content table {
@@ -42,20 +138,14 @@ const styles = `
   }
 
   .editor-content th, .editor-content td {
-    border: 1px solid #d1d5db; /* border-gray-300 */
+    border: 1px solid #ccc;
     padding: 8px;
     text-align: left;
   }
-  .dark .editor-content th, .dark .editor-content td {
-    border: 1px solid #4b5563; /* border-gray-600 */
-  }
 
   .editor-content th {
-    background-color: #f3f4f6; /* bg-gray-100 */
+    background-color: #f3f4f6;
     font-weight: 600;
-  }
-  .dark .editor-content th {
-    background-color: #374151; /* bg-gray-700 */
   }
 
   /* Print styles for A4 */
@@ -67,56 +157,141 @@ const styles = `
   }
 `
 
-const ALL_TRANSFORMERS = TRANSFORMERS;
+const ALL_TRANSFORMERS = [
+  HEADING,
+  QUOTE,
+  CODE,
+  UNORDERED_LIST,
+  ORDERED_LIST,
+  CHECK_LIST,
+  INLINE_CODE,
+  LINK,
+  BOLD_ITALIC_STAR,
+  BOLD_ITALIC_UNDERSCORE,
+  BOLD_STAR,
+  BOLD_UNDERSCORE,
+  ITALIC_STAR,
+  ITALIC_UNDERSCORE,
+  STRIKETHROUGH
+]
 
-function MarkdownPlugin({ initialMarkdown }) {
+function MarkdownPlugin({ initialMarkdown, onMarkdownChange }) {
   const [editor] = useLexicalComposerContext()
+  const isInitialLoad = useRef(true)
   const hasLoadedContent = useRef(false)
+  const initialMarkdownRef = useRef(initialMarkdown)
 
+  // Load initial markdown content
   useEffect(() => {
-    if (editor && initialMarkdown && !hasLoadedContent.current) {
+    if (!editor) {
+      return
+    }
+
+    // Only load on first mount or when initialMarkdown changes from external source
+    if (initialMarkdown && !hasLoadedContent.current) {
       hasLoadedContent.current = true
+      initialMarkdownRef.current = initialMarkdown
+
+      // Use queueMicrotask to ensure editor is fully initialized
       queueMicrotask(() => {
         editor.update(
           () => {
             try {
               const root = $getRoot()
               root.clear()
+
+              // Convert markdown string to lexical nodes
               $convertFromMarkdownString(initialMarkdown, ALL_TRANSFORMERS)
-              if (root.getChildrenSize() === 0) {
-                root.append($createParagraphNode())
+
+              // Check if content was added
+              const childrenSize = root.getChildrenSize()
+
+              // If no children, add empty paragraph
+              if (childrenSize === 0) {
+                const paragraph = $createParagraphNode()
+                root.append(paragraph)
               }
             } catch (error) {
               console.error('Error converting markdown:', error)
+              // Fallback: add empty paragraph
               const root = $getRoot()
               root.clear()
-              root.append($createParagraphNode())
+              const paragraph = $createParagraphNode()
+              root.append(paragraph)
             }
           },
-          { discrete: true }
+          {
+            discrete: true
+          }
         )
+
+        // Allow changes to be tracked after initial load
+        setTimeout(() => {
+          isInitialLoad.current = false
+        }, 100)
       })
-    } else if (editor && !initialMarkdown && !hasLoadedContent.current) {
+    } else if (!initialMarkdown && !hasLoadedContent.current) {
+      // Handle empty document
       hasLoadedContent.current = true
+
       editor.update(() => {
         const root = $getRoot()
         if (root.getChildrenSize() === 0) {
-          root.append($createParagraphNode())
+          const paragraph = $createParagraphNode()
+          root.append(paragraph)
         }
       })
+
+      setTimeout(() => {
+        isInitialLoad.current = false
+      }, 100)
     }
   }, [editor, initialMarkdown])
 
-  return null
+  // Reset the ref when initialMarkdown changes externally
+  useEffect(() => {
+    hasLoadedContent.current = false
+  }, [initialMarkdown])
+
+  // Handle editor changes and convert to markdown
+  const handleChange = (editorState) => {
+    // Skip change events during initial load
+    if (isInitialLoad.current) {
+      return
+    }
+
+    editorState.read(() => {
+      try {
+        const markdown = $convertToMarkdownString(ALL_TRANSFORMERS)
+        // Only notify if content actually changed
+        if (markdown !== initialMarkdownRef.current) {
+          initialMarkdownRef.current = markdown
+          onMarkdownChange(markdown)
+        }
+      } catch (error) {
+        console.error('Error converting to markdown:', error)
+      }
+    })
+  }
+
+  return <OnChangePlugin onChange={handleChange} ignoreSelectionChange />
 }
 
-export default function Editor({ initialMarkdown, zoomLevel = 100 }) {
-  const marginTop = '72px'
-  const marginBottom = '72px'
-  const marginLeft = '72px'
-  const marginRight = '72px'
+MarkdownPlugin.propTypes = {
+  initialMarkdown: PropTypes.string,
+  onMarkdownChange: PropTypes.func.isRequired
+}
+
+export default function Editor({ initialMarkdown, onMarkdownChange, zoomLevel = 100 }) {
+  // Professional document margins (similar to Word defaults)
+  const marginTop = '72px' // 1 inch
+  const marginBottom = '72px' // 1 inch
+  const marginLeft = '72px' // 1 inch
+  const marginRight = '72px' // 1 inch
+
+  // Base font size for professional documents
   const baseFontSize = 16
-  const calculatedFontSize = `${baseFontSize}px`
+  const calculatedFontSize = `${(baseFontSize * zoomLevel) / 100}px`
 
   return (
     <div className="relative w-full">
@@ -137,7 +312,7 @@ export default function Editor({ initialMarkdown, zoomLevel = 100 }) {
         }
         placeholder={
           <div
-            className="absolute select-none pointer-events-none text-gray-400 dark:text-gray-500"
+            className="absolute select-none pointer-events-none text-gray-400"
             style={{
               top: marginTop,
               left: marginLeft,
@@ -156,7 +331,13 @@ export default function Editor({ initialMarkdown, zoomLevel = 100 }) {
       <LinkPlugin />
       <ListSmartBreakPlugin />
       <MarkdownShortcutPlugin transformers={ALL_TRANSFORMERS} />
-      <MarkdownPlugin initialMarkdown={initialMarkdown} />
+      <MarkdownPlugin initialMarkdown={initialMarkdown} onMarkdownChange={onMarkdownChange} />
     </div>
   )
+}
+
+Editor.propTypes = {
+  initialMarkdown: PropTypes.string,
+  onMarkdownChange: PropTypes.func.isRequired,
+  zoomLevel: PropTypes.number
 }

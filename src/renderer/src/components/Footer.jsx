@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import PropTypes from 'prop-types'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { $getRoot } from 'lexical'
 
@@ -11,7 +12,7 @@ const Footer = ({
   onZoomOut,
   onZoomReset,
   onZoomPreset,
-  presets = [50, 75, 100, 125, 150, 200]
+  presets
 }) => {
   const [editor] = useLexicalComposerContext()
   const [wordCount, setWordCount] = useState(0)
@@ -50,7 +51,9 @@ const Footer = ({
           const minutes = Math.floor(diffInSeconds / 60)
           setLastSavedText(`${minutes} min${minutes > 1 ? 's' : ''} ago`)
         } else {
-          setLastSavedText(new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+          setLastSavedText(
+            new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          )
         }
       }
       updateLastSavedText()
@@ -68,8 +71,8 @@ const Footer = ({
       }
     }
     if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      window.document.addEventListener('mousedown', handleClickOutside)
+      return () => window.document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [isDropdownOpen])
 
@@ -109,7 +112,11 @@ const Footer = ({
             autoFocus
           />
         ) : (
-          <div className="flex items-center gap-1" onDoubleClick={handleDoubleClick} title="Double-click to rename">
+          <div
+            className="flex items-center gap-1"
+            onDoubleClick={handleDoubleClick}
+            title="Double-click to rename"
+          >
             <span className="font-semibold cursor-pointer">{document.title}</span>
           </div>
         )}
@@ -128,7 +135,12 @@ const Footer = ({
             title="Zoom Out (Ctrl/Cmd + -)"
             aria-label="Zoom Out"
           >
-            <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-4 h-4 text-gray-600 dark:text-gray-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
             </svg>
           </button>
@@ -141,8 +153,20 @@ const Footer = ({
               title="Select zoom level"
             >
               <span>{zoomLevel}%</span>
-              <svg className={`w-3 h-3 ml-1.5 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <svg
+                className={`w-3 h-3 ml-1.5 transition-transform ${
+                  isDropdownOpen ? 'rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </button>
             {isDropdownOpen && (
@@ -158,7 +182,11 @@ const Footer = ({
                     }`}
                   >
                     {preset}%
-                    {preset === 100 && <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">(Default)</span>}
+                    {preset === 100 && (
+                      <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
+                        (Default)
+                      </span>
+                    )}
                   </button>
                 ))}
                 <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
@@ -178,8 +206,18 @@ const Footer = ({
             title="Zoom In (Ctrl/Cmd + +)"
             aria-label="Zoom In"
           >
-            <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg
+              className="w-4 h-4 text-gray-600 dark:text-gray-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
             </svg>
           </button>
         </div>
@@ -191,6 +229,25 @@ const Footer = ({
       </div>
     </div>
   )
+}
+
+Footer.propTypes = {
+  document: PropTypes.shape({
+    title: PropTypes.string
+  }).isRequired,
+  lastSaved: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onRename: PropTypes.func.isRequired,
+  zoomLevel: PropTypes.number.isRequired,
+  onZoomIn: PropTypes.func.isRequired,
+  onZoomOut: PropTypes.func.isRequired,
+  onZoomReset: PropTypes.func.isRequired,
+  onZoomPreset: PropTypes.func.isRequired,
+  presets: PropTypes.arrayOf(PropTypes.number)
+}
+
+Footer.defaultProps = {
+  presets: [50, 75, 100, 125, 150, 200],
+  lastSaved: null
 }
 
 export default Footer

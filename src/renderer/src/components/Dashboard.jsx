@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
 
 const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) => {
   const [recentFiles, setRecentFiles] = useState([])
@@ -13,7 +14,7 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
       }
     }
 
-    getRecentFiles()
+    void getRecentFiles()
   }, [])
 
   return (
@@ -22,7 +23,9 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
         <div className="w-full max-w-4xl mx-auto p-8">
           <div className="text-center mb-12">
             <h1 className="text-5xl font-bold text-gray-800 dark:text-gray-100 mb-4">LawranPad</h1>
-            <p className="text-xl text-gray-600 dark:text-gray-400">A modern and powerful text editor.</p>
+            <p className="text-xl text-gray-600 dark:text-gray-400">
+              A modern and powerful text editor.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
@@ -46,7 +49,9 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-2">New Document</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                New Document
+              </h2>
               <p className="text-gray-600 dark:text-gray-400">Start with a blank canvas.</p>
             </div>
             <div
@@ -69,13 +74,17 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-2">Open File</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                Open File
+              </h2>
               <p className="text-gray-600 dark:text-gray-400">Open a file from your computer.</p>
             </div>
           </div>
 
           <div>
-            <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Recent Documents</h3>
+            <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
+              Recent Documents
+            </h3>
             {recentFiles.length > 0 ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
                 <ul className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -86,7 +95,9 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
                       onClick={() => onOpenRecentDocument(file.id)}
                     >
                       <div>
-                        <p className="text-lg font-medium text-gray-800 dark:text-gray-100">{file.title}</p>
+                        <p className="text-lg font-medium text-gray-800 dark:text-gray-100">
+                          {file.title}
+                        </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           Last updated: {new Date(file.updated_at).toLocaleString()}
                         </p>
@@ -127,7 +138,9 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
                     />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">No Recent Documents</h3>
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                  No Recent Documents
+                </h3>
                 <p className="text-gray-600 dark:text-gray-400">
                   Create a new document or open a file to get started.
                 </p>
@@ -141,6 +154,12 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
       </footer>
     </div>
   )
+}
+
+Dashboard.propTypes = {
+  onNewDocument: PropTypes.func.isRequired,
+  onOpenRecentDocument: PropTypes.func.isRequired,
+  onOpenFileDialog: PropTypes.func.isRequired
 }
 
 export default Dashboard
