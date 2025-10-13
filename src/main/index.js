@@ -1,7 +1,8 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
-import { join, dirname, basename } from 'path'
+import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { readFile, writeFile } from 'fs/promises'
+import HTMLtoDOCX from 'html-to-docx'
 import {
   initDatabase,
   listDocuments,
@@ -60,7 +61,7 @@ app
       optimizer.watchWindowShortcuts(window)
     })
 
-    // --- New Database-Centric IPC Handlers ---
+    // --- Database-Centric IPC Handlers ---
 
     ipcMain.handle('get-documents', () => listDocuments())
     ipcMain.handle('get-document-content', (_, id) => getDocument(id))
@@ -70,7 +71,7 @@ app
     ipcMain.handle('open-file-dialog', async (event) => {
       const { canceled, filePaths } = await dialog.showOpenDialog({
         properties: ['openFile'],
-        filters: [{ name: 'Markdown', extensions: ['md', 'txt'] }]
+        filters: [{ name: 'HTML', extensions: ['html', 'htm'] }]
       })
 
       if (canceled || filePaths.length === 0) {
@@ -84,7 +85,7 @@ app
         return doc
       } else {
         const content = await readFile(filePath, 'utf-8')
-        const title = basename(filePath, '.md').replace(/[-_]/g, ' ')
+        const title = basename(filePath, '.html').replace(/[-_]/g, ' ')
         return createDocument({ title, content, filePath })
       }
     })
@@ -99,8 +100,8 @@ app
       } else {
         // If no file path, trigger save-as dialog
         const { canceled, filePath } = await dialog.showSaveDialog({
-          defaultPath: `${doc.title}.md`,
-          filters: [{ name: 'Markdown', extensions: ['md', 'txt'] }]
+          defaultPath: `${doc.title}.html`,
+          filters: [{ name: 'HTML', extensions: ['html', 'htm'] }]
         })
 
         if (canceled || !filePath) {
@@ -108,13 +109,87 @@ app
         }
 
         await writeFile(filePath, content, 'utf-8')
-        const title = basename(filePath, '.md').replace(/[-_]/g, ' ')
+        const title = basename(filePath, '.html').replace(/[-_]/g, ' ')
         return updateDocument(id, { title, content, file_path: filePath })
       }
     })
 
     ipcMain.handle('rename-document', async (event, { id, newTitle }) => {
       return updateDocument(id, { title: newTitle })
+    })
+
+    // --- Export Handlers ---
+
+    ipcMain.on('export-to-markdown', async (event, markdown) => {
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Export as Markdown',
+        defaultPath: 'document.md',
+        filters: [{ name: 'Markdown', extensions: ['md'] }]
+      })
+
+      if (!canceled && filePath) {
+        try {
+          await writeFile(filePath, markdown, 'utf-8')
+        } catch (error) {
+          console.error('Failed to export Markdown:', error)
+          dialog.showErrorBox('Export Error', 'Could not save the Markdown file.')
+        }
+      }
+    })
+
+    ipcMain.on('export-to-pdf', async (event, html) => {
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Export as PDF',
+        defaultPath: 'document.pdf',
+        filters: [{ name: 'PDF', extensions: ['pdf'] }]
+      })
+
+      if (!canceled && filePath) {
+        const pdfWindow = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, contextIsolation: true } })
+        const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body { font-family: sans-serif; }</style></head><body>${html}</body></html>`
+        await pdfWindow.loadURL('data:text/html;charset=UTF-8,' + encodeURIComponent(fullHtml))
+
+        try {
+          const data = await pdfWindow.webContents.printToPDF({
+            margins: {
+              top: 1, // 1 inch
+              bottom: 1,
+              left: 1,
+              right: 1
+            },
+            pageSize: 'A4'
+          })
+          await writeFile(filePath, data)
+        } catch (error) {
+          console.error('Failed to export PDF:', error)
+          dialog.showErrorBox('Export Error', 'Could not save the PDF file.')
+        } finally {
+          pdfWindow.close()
+        }
+      }
+    })
+
+    ipcMain.on('export-to-docx', async (event, html) => {
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Export as DOCX',
+        defaultPath: 'document.docx',
+        filters: [{ name: 'Word Document', extensions: ['docx'] }]
+      })
+
+      if (!canceled && filePath) {
+        try {
+          const fileBuffer = await HTMLtoDOCX(html, null, {
+            table: { row: { cantSplit: true } },
+            footer: true,
+            pageNumber: true
+          })
+
+          await writeFile(filePath, fileBuffer)
+        } catch (error) {
+          console.error('Failed to export DOCX:', error)
+          dialog.showErrorBox('Export Error', 'Could not save the DOCX file.')
+        }
+      }
     })
 
     createWindow()

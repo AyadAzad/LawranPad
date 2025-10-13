@@ -1,21 +1,49 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import { $getRoot } from 'lexical'
+import { $convertToMarkdownString, TRANSFORMERS } from '@lexical/markdown'
+
+const ALL_TRANSFORMERS = [
+  TRANSFORMERS.TABLE,
+  TRANSFORMERS.HEADING,
+  TRANSFORMERS.QUOTE,
+  TRANSFORMERS.CODE,
+  TRANSFORMERS.UNORDERED_LIST,
+  TRANSFORMERS.ORDERED_LIST,
+  TRANSFORMERS.CHECK_LIST,
+  TRANSFORMERS.INLINE_CODE,
+  TRANSFORMERS.LINK,
+  TRANSFORMERS.BOLD_ITALIC_STAR,
+  TRANSFORMERS.BOLD_ITALIC_UNDERSCORE,
+  TRANSFORMERS.BOLD_STAR,
+  TRANSFORMERS.BOLD_UNDERSCORE,
+  TRANSFORMERS.ITALIC_STAR,
+  TRANSFORMERS.ITALIC_UNDERSCORE,
+  TRANSFORMERS.STRIKETHROUGH
+]
 
 const OutputToolbar = () => {
   const [editor] = useLexicalComposerContext()
 
-  const handleExportToPDF = () => {
+  const handleExportToMarkdown = () => {
     editor.getEditorState().read(() => {
-      const data = $getRoot().getTextContent()
-      window.electron.ipcRenderer.send('export-to-pdf', data)
+      const markdown = $convertToMarkdownString(ALL_TRANSFORMERS)
+      window.electron.ipcRenderer.send('export-to-markdown', markdown)
     })
   }
 
+  const handleExportToPDF = () => {
+    const rootElement = editor.getRootElement()
+    if (rootElement) {
+      const html = rootElement.innerHTML
+      window.electron.ipcRenderer.send('export-to-pdf', html)
+    }
+  }
+
   const handleExportToDocx = () => {
-    editor.getEditorState().read(() => {
-      const data = $getRoot().getTextContent()
-      window.electron.ipcRenderer.send('export-to-docx', data)
-    })
+    const rootElement = editor.getRootElement()
+    if (rootElement) {
+      const html = rootElement.innerHTML
+      window.electron.ipcRenderer.send('export-to-docx', html)
+    }
   }
 
   const buttonClasses =
@@ -25,6 +53,22 @@ const OutputToolbar = () => {
   return (
     <aside className="w-20 bg-white/80 dark:bg-gray-800/80 border-l border-gray-200 dark:border-gray-700 shadow-lg flex flex-col items-center p-4 gap-4">
       <div className="text-lg font-bold text-blue-700 dark:text-blue-400 mb-4">Output</div>
+      <button onClick={handleExportToMarkdown} className={buttonClasses} title="Export as Markdown">
+        <svg
+          className={svgIconClasses}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M16 18l6-6-6-6M8 6l-6 6 6 6"
+          ></path>
+        </svg>
+      </button>
       <button onClick={handleExportToPDF} className={buttonClasses} title="Export as PDF">
         <svg
           className={svgIconClasses}

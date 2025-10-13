@@ -136,8 +136,8 @@ function AppContent() {
     [activeDocument?.id]
   )
 
-  const handleMarkdownChange = useCallback((markdown) => {
-    editorContentRef.current = markdown
+  const handleHtmlChange = useCallback((html) => {
+    editorContentRef.current = html
   }, [])
 
   const increaseZoom = useCallback(() => {
@@ -197,8 +197,8 @@ function AppContent() {
                   </div>
                   <div className="relative">
                     <Editor
-                      initialMarkdown={activeDocument.content}
-                      onMarkdownChange={handleMarkdownChange}
+                      initialHtml={activeDocument.content}
+                      onHtmlChange={handleHtmlChange}
                       zoomLevel={zoomLevel}
                     />
                   </div>

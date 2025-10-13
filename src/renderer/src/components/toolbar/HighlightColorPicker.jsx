@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { $getSelection, $isRangeSelection } from 'lexical'
+import { $patchStyleText } from '@lexical/selection'
+import PropTypes from 'prop-types'
 
 const HIGHLIGHT_COLORS = [
   { color: 'transparent', label: 'Default' },
@@ -21,8 +22,7 @@ const HIGHLIGHT_COLORS = [
   { color: '#cddc39', label: 'Lime' }
 ]
 
-const HighlightColorPicker = () => {
-  const [editor] = useLexicalComposerContext()
+const HighlightColorPicker = ({ editor }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [currentColor, setCurrentColor] = useState('transparent')
   const popoverRef = useRef(null)
@@ -51,18 +51,26 @@ const HighlightColorPicker = () => {
       editor.update(() => {
         const selection = $getSelection()
         if ($isRangeSelection(selection)) {
-          selection.getNodes().forEach((node) => {
-            if (node.getType() === 'text') {
-              node.setStyle(`background-color: ${color}`)
-            }
-          })
+          $patchStyleText(selection, { 'background-color': color })
         }
       })
-      setCurrentColor(color)
       setIsOpen(false)
     },
     [editor]
   )
+
+  useEffect(() => {
+    return editor.registerUpdateListener(({ editorState }) => {
+      editorState.read(() => {
+        const selection = $getSelection()
+        if ($isRangeSelection(selection)) {
+          const style = selection.style
+          const bgColor = style.split('background-color: ')[1]?.split(';')[0] || 'transparent'
+          setCurrentColor(bgColor)
+        }
+      })
+    })
+  }, [editor])
 
   return (
     <div className="relative">
@@ -102,8 +110,14 @@ const HighlightColorPicker = () => {
                 key={color}
                 onClick={() => handleColorChange(color)}
                 className={`w-10 h-10 rounded transition-all hover:scale-105 focus:outline-none ${
-                  currentColor === color ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 ring-offset-white dark:ring-offset-gray-800' : ''
-                } ${color === 'transparent' ? 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600' : ''}`}
+                  currentColor === color
+                    ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 ring-offset-white dark:ring-offset-gray-800'
+                    : ''
+                } ${
+                  color === 'transparent'
+                    ? 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600'
+                    : ''
+                }`}
                 style={{ backgroundColor: color }}
                 title={label}
               >
@@ -122,6 +136,10 @@ const HighlightColorPicker = () => {
       )}
     </div>
   )
+}
+
+HighlightColorPicker.propTypes = {
+  editor: PropTypes.object.isRequired
 }
 
 export default HighlightColorPicker

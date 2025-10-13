@@ -12,9 +12,8 @@ import { TablePlugin } from '@lexical/react/LexicalTablePlugin'
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin'
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin'
 import ListSmartBreakPlugin from './toolbar/ListSmartBreakPlugin'
+import { $generateNodesFromDOM } from '@lexical/html'
 import {
-  $convertFromMarkdownString,
-  $convertToMarkdownString,
   HEADING,
   QUOTE,
   CODE,
@@ -175,45 +174,34 @@ const ALL_TRANSFORMERS = [
   STRIKETHROUGH
 ]
 
-function MarkdownPlugin({ initialMarkdown, onMarkdownChange }) {
+function HtmlPlugin({ initialHtml, onHtmlChange }) {
   const [editor] = useLexicalComposerContext()
   const isInitialLoad = useRef(true)
   const hasLoadedContent = useRef(false)
-  const initialMarkdownRef = useRef(initialMarkdown)
+  const initialHtmlRef = useRef(initialHtml)
 
-  // Load initial markdown content
+  // Load initial HTML content
   useEffect(() => {
     if (!editor) {
       return
     }
 
-    // Only load on first mount or when initialMarkdown changes from external source
-    if (initialMarkdown && !hasLoadedContent.current) {
+    if (initialHtml && !hasLoadedContent.current) {
       hasLoadedContent.current = true
-      initialMarkdownRef.current = initialMarkdown
+      initialHtmlRef.current = initialHtml
 
-      // Use queueMicrotask to ensure editor is fully initialized
       queueMicrotask(() => {
         editor.update(
           () => {
             try {
+              const parser = new DOMParser()
+              const dom = parser.parseFromString(initialHtml, 'text/html')
+              const nodes = $generateNodesFromDOM(editor, dom)
               const root = $getRoot()
               root.clear()
-
-              // Convert markdown string to lexical nodes
-              $convertFromMarkdownString(initialMarkdown, ALL_TRANSFORMERS)
-
-              // Check if content was added
-              const childrenSize = root.getChildrenSize()
-
-              // If no children, add empty paragraph
-              if (childrenSize === 0) {
-                const paragraph = $createParagraphNode()
-                root.append(paragraph)
-              }
+              root.append(...nodes)
             } catch (error) {
-              console.error('Error converting markdown:', error)
-              // Fallback: add empty paragraph
+              console.error('Error converting HTML:', error)
               const root = $getRoot()
               root.clear()
               const paragraph = $createParagraphNode()
@@ -225,13 +213,11 @@ function MarkdownPlugin({ initialMarkdown, onMarkdownChange }) {
           }
         )
 
-        // Allow changes to be tracked after initial load
         setTimeout(() => {
           isInitialLoad.current = false
         }, 100)
       })
-    } else if (!initialMarkdown && !hasLoadedContent.current) {
-      // Handle empty document
+    } else if (!initialHtml && !hasLoadedContent.current) {
       hasLoadedContent.current = true
 
       editor.update(() => {
@@ -246,50 +232,43 @@ function MarkdownPlugin({ initialMarkdown, onMarkdownChange }) {
         isInitialLoad.current = false
       }, 100)
     }
-  }, [editor, initialMarkdown])
+  }, [editor, initialHtml])
 
-  // Reset the ref when initialMarkdown changes externally
   useEffect(() => {
     hasLoadedContent.current = false
-  }, [initialMarkdown])
+  }, [initialHtml])
 
-  // Handle editor changes and convert to markdown
-  const handleChange = (editorState) => {
-    // Skip change events during initial load
+  const handleChange = () => {
     if (isInitialLoad.current) {
       return
     }
-
-    editorState.read(() => {
-      try {
-        const markdown = $convertToMarkdownString(ALL_TRANSFORMERS)
-        // Only notify if content actually changed
-        if (markdown !== initialMarkdownRef.current) {
-          initialMarkdownRef.current = markdown
-          onMarkdownChange(markdown)
+    // Use a timeout to ensure the DOM is updated before we read it.
+    setTimeout(() => {
+      const rootElement = editor.getRootElement()
+      if (rootElement) {
+        const htmlString = rootElement.innerHTML
+        if (htmlString !== initialHtmlRef.current) {
+          initialHtmlRef.current = htmlString
+          onHtmlChange(htmlString)
         }
-      } catch (error) {
-        console.error('Error converting to markdown:', error)
       }
-    })
+    }, 0)
   }
 
   return <OnChangePlugin onChange={handleChange} ignoreSelectionChange />
 }
 
-MarkdownPlugin.propTypes = {
-  initialMarkdown: PropTypes.string,
-  onMarkdownChange: PropTypes.func.isRequired
+HtmlPlugin.propTypes = {
+  initialHtml: PropTypes.string,
+  onHtmlChange: PropTypes.func.isRequired
 }
 
-export default function Editor({ initialMarkdown, onMarkdownChange, zoomLevel = 100 }) {
-  // Professional document margins (similar to Word defaults)
+export default function Editor({ initialHtml, onHtmlChange, zoomLevel = 100 }) {
   const marginTop = '72px' // 1 inch
   const marginBottom = '72px' // 1 inch
   const marginLeft = '72px' // 1 inch
   const marginRight = '72px' // 1 inch
 
-  // Base font size for professional documents
   const baseFontSize = 16
   const calculatedFontSize = `${(baseFontSize * zoomLevel) / 100}px`
 
@@ -331,13 +310,13 @@ export default function Editor({ initialMarkdown, onMarkdownChange, zoomLevel = 
       <LinkPlugin />
       <ListSmartBreakPlugin />
       <MarkdownShortcutPlugin transformers={ALL_TRANSFORMERS} />
-      <MarkdownPlugin initialMarkdown={initialMarkdown} onMarkdownChange={onMarkdownChange} />
+      <HtmlPlugin initialHtml={initialHtml} onHtmlChange={onHtmlChange} />
     </div>
   )
 }
 
 Editor.propTypes = {
-  initialMarkdown: PropTypes.string,
-  onMarkdownChange: PropTypes.func.isRequired,
+  initialHtml: PropTypes.string,
+  onHtmlChange: PropTypes.func.isRequired,
   zoomLevel: PropTypes.number
 }

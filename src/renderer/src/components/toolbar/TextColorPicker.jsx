@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { $getSelection, $isRangeSelection } from 'lexical'
+import { $patchStyleText } from '@lexical/selection'
+import PropTypes from 'prop-types'
 
 // Define color palette
 const COLORS = [
@@ -26,8 +28,7 @@ const COLORS = [
   '#98FB98' // Pale Green
 ]
 
-const TextColorPicker = () => {
-  const [editor] = useLexicalComposerContext()
+const TextColorPicker = ({ editor }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [currentColor, setCurrentColor] = useState('#000000')
   const popoverRef = useRef(null)
@@ -56,11 +57,7 @@ const TextColorPicker = () => {
       editor.update(() => {
         const selection = $getSelection()
         if ($isRangeSelection(selection)) {
-          selection.getNodes().forEach((node) => {
-            if (node.getType() === 'text') {
-              node.setStyle(`color: ${color}`)
-            }
-          })
+          $patchStyleText(selection, { color })
         }
       })
       setCurrentColor(color)
@@ -68,6 +65,19 @@ const TextColorPicker = () => {
     },
     [editor]
   )
+
+  useEffect(() => {
+    return editor.registerUpdateListener(({ editorState }) => {
+      editorState.read(() => {
+        const selection = $getSelection()
+        if ($isRangeSelection(selection)) {
+          const style = selection.style
+          const color = style.split('color: ')[1]?.split(';')[0] || '#000000'
+          setCurrentColor(color)
+        }
+      })
+    })
+  }, [editor])
 
   return (
     <div className="relative">
@@ -107,7 +117,9 @@ const TextColorPicker = () => {
                 key={color}
                 onClick={() => handleColorChange(color)}
                 className={`w-5 h-5 rounded transition-transform hover:scale-110 focus:outline-none ${
-                  currentColor === color ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 ring-offset-white dark:ring-offset-gray-800' : ''
+                  currentColor === color
+                    ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 ring-offset-white dark:ring-offset-gray-800'
+                    : ''
                 }`}
                 style={{ backgroundColor: color }}
                 title={color}
@@ -124,6 +136,10 @@ const TextColorPicker = () => {
       )}
     </div>
   )
+}
+
+TextColorPicker.propTypes = {
+  editor: PropTypes.object.isRequired
 }
 
 // Add keyframe animation
