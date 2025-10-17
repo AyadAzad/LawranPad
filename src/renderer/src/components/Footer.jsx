@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import PropTypes from 'prop-types'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { $getRoot } from 'lexical'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const Footer = ({
   document,
@@ -21,6 +22,7 @@ const Footer = ({
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isHovering, setIsHovering] = useState(false)
   const dropdownRef = useRef(null)
 
   useEffect(() => {
@@ -98,42 +100,155 @@ const Footer = ({
     setIsRenaming(true)
   }
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { y: 100, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 300,
+        damping: 30,
+        when: 'beforeChildren',
+        staggerChildren: 0.1
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: 'spring', stiffness: 400, damping: 25 }
+    }
+  }
+
+  const dropdownVariants = {
+    closed: {
+      opacity: 0,
+      scale: 0.95,
+      y: 10,
+      transition: {
+        duration: 0.15,
+        ease: 'easeOut'
+      }
+    },
+    open: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: {
+        type: 'spring',
+        stiffness: 400,
+        damping: 30,
+        when: 'beforeChildren',
+        staggerChildren: 0.05
+      }
+    }
+  }
+
+  const dropdownItemVariants = {
+    closed: { x: -10, opacity: 0 },
+    open: { x: 0, opacity: 1 }
+  }
+
+  const statusPulseVariants = {
+    initial: { scale: 1 },
+    pulse: {
+      scale: [1, 1.2, 1],
+      transition: {
+        duration: 2,
+        repeat: Infinity,
+        ease: 'easeInOut'
+      }
+    }
+  }
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-4 py-1 bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
+    <motion.div
+      className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-4 py-1 bg-gray-100/95 dark:bg-gray-800/95 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300 backdrop-blur-sm"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      onHoverStart={() => setIsHovering(true)}
+      onHoverEnd={() => setIsHovering(false)}
+    >
       <div className="flex items-center gap-4">
-        {isRenaming ? (
-          <input
-            type="text"
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
-            onBlur={handleRename}
-            onKeyDown={(e) => e.key === 'Enter' && handleRename()}
-            className="font-semibold bg-gray-200 dark:bg-gray-700 rounded px-1 -my-0.5"
-            autoFocus
-          />
-        ) : (
-          <div
-            className="flex items-center gap-1"
-            onDoubleClick={handleDoubleClick}
-            title="Double-click to rename"
-          >
-            <span className="font-semibold cursor-pointer">{document.title}</span>
-          </div>
-        )}
-        <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
-        <span>{wordCount} words</span>
-        <span>{charCount} characters</span>
-        <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
-        <span>{lastSavedText}</span>
+        <motion.div variants={itemVariants}>
+          {isRenaming ? (
+            <motion.input
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              type="text"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onBlur={handleRename}
+              onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+              className="font-semibold bg-gray-200 dark:bg-gray-700 rounded px-1 -my-0.5 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+              autoFocus
+            />
+          ) : (
+            <motion.div
+              className="flex items-center gap-1"
+              onDoubleClick={handleDoubleClick}
+              title="Double-click to rename"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <span className="font-semibold cursor-pointer bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-300 dark:to-gray-100 bg-clip-text text-transparent">
+                {document.title}
+              </span>
+            </motion.div>
+          )}
+        </motion.div>
+
+        <motion.div
+          variants={itemVariants}
+          className="w-px h-4 bg-gradient-to-b from-transparent via-gray-300 to-transparent dark:via-gray-600"
+        />
+
+        <motion.span variants={itemVariants} whileHover={{ scale: 1.05 }} className="font-medium">
+          {wordCount} words
+        </motion.span>
+
+        <motion.span variants={itemVariants} whileHover={{ scale: 1.05 }} className="font-medium">
+          {charCount} characters
+        </motion.span>
+
+        <motion.div
+          variants={itemVariants}
+          className="w-px h-4 bg-gradient-to-b from-transparent via-gray-300 to-transparent dark:via-gray-600"
+        />
+
+        <motion.span
+          variants={itemVariants}
+          animate={{
+            color: lastSavedText === 'Saved' ? '#10B981' : '',
+            transition: { duration: 0.3 }
+          }}
+          className="font-medium"
+        >
+          {lastSavedText}
+        </motion.span>
       </div>
+
       <div className="flex items-center gap-4">
-        <div className="flex items-center bg-white dark:bg-gray-700 rounded-md shadow-sm border border-gray-200 dark:border-gray-600 overflow-hidden">
-          <button
+        <motion.div
+          variants={itemVariants}
+          className="flex items-center bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 overflow-hidden"
+          whileHover={{ scale: 1.02, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+        >
+          <motion.button
             onClick={onZoomOut}
             disabled={zoomLevel <= 50}
             className="p-2 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-r border-gray-200 dark:border-gray-600"
             title="Zoom Out (Ctrl/Cmd + -)"
             aria-label="Zoom Out"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
           >
             <svg
               className="w-4 h-4 text-gray-600 dark:text-gray-300"
@@ -143,23 +258,26 @@ const Footer = ({
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
             </svg>
-          </button>
+          </motion.button>
+
           <div className="relative" ref={dropdownRef}>
-            <button
+            <motion.button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="px-3 py-2 min-w-[80px] text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors border-r border-gray-200 dark:border-gray-600 flex items-center justify-center"
               aria-haspopup="true"
               aria-expanded={isDropdownOpen}
               title="Select zoom level"
+              whileHover={{ backgroundColor: 'rgba(0,0,0,0.05)' }}
+              whileTap={{ scale: 0.95 }}
             >
               <span>{zoomLevel}%</span>
-              <svg
-                className={`w-3 h-3 ml-1.5 transition-transform ${
-                  isDropdownOpen ? 'rotate-180' : ''
-                }`}
+              <motion.svg
+                className="w-3 h-3 ml-1.5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                animate={{ rotate: isDropdownOpen ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
               >
                 <path
                   strokeLinecap="round"
@@ -167,44 +285,63 @@ const Footer = ({
                   strokeWidth={2}
                   d="M19 9l-7 7-7-7"
                 />
-              </svg>
-            </button>
-            {isDropdownOpen && (
-              <div className="absolute bottom-full right-0 mb-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg py-1 min-w-[120px] max-h-60 overflow-y-auto z-50">
-                {presets.map((preset) => (
-                  <button
-                    key={preset}
-                    onClick={() => handlePresetSelect(preset)}
-                    className={`w-full px-4 py-2 text-left text-sm transition-colors ${
-                      preset === zoomLevel
-                        ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 font-medium'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    {preset}%
-                    {preset === 100 && (
-                      <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
-                        (Default)
-                      </span>
-                    )}
-                  </button>
-                ))}
-                <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
-                <button
-                  onClick={handleReset}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              </motion.svg>
+            </motion.button>
+
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  variants={dropdownVariants}
+                  initial="closed"
+                  animate="open"
+                  exit="closed"
+                  className="absolute bottom-full right-0 mb-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl py-1 min-w-[120px] max-h-60 overflow-y-auto z-50 backdrop-blur-sm"
                 >
-                  Reset to 100%
-                </button>
-              </div>
-            )}
+                  {presets.map((preset) => (
+                    <motion.button
+                      key={preset}
+                      variants={dropdownItemVariants}
+                      onClick={() => handlePresetSelect(preset)}
+                      className={`w-full px-4 py-2 text-left text-sm transition-all ${
+                        preset === zoomLevel
+                          ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 font-medium'
+                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                      whileHover={{ x: 4 }}
+                    >
+                      {preset}%
+                      {preset === 100 && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
+                          (Default)
+                        </span>
+                      )}
+                    </motion.button>
+                  ))}
+                  <motion.div
+                    variants={dropdownItemVariants}
+                    className="border-t border-gray-200 dark:border-gray-600 my-1"
+                  />
+                  <motion.button
+                    variants={dropdownItemVariants}
+                    onClick={handleReset}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                    whileHover={{ x: 4 }}
+                  >
+                    Reset to 100%
+                  </motion.button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <button
+
+          <motion.button
             onClick={onZoomIn}
             disabled={zoomLevel >= 200}
             className="p-2 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             title="Zoom In (Ctrl/Cmd + +)"
             aria-label="Zoom In"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
           >
             <svg
               className="w-4 h-4 text-gray-600 dark:text-gray-300"
@@ -219,15 +356,39 @@ const Footer = ({
                 d="M12 4v16m8-8H4"
               />
             </svg>
-          </button>
-        </div>
-        <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
-          <span className="font-semibold">Ready</span>
-        </div>
+          </motion.button>
+        </motion.div>
+
+        <motion.div
+          variants={itemVariants}
+          className="w-px h-4 bg-gradient-to-b from-transparent via-gray-300 to-transparent dark:via-gray-600"
+        />
+
+        <motion.div
+          variants={itemVariants}
+          className="flex items-center gap-2"
+          whileHover={{ scale: 1.05 }}
+        >
+          <motion.div
+            variants={statusPulseVariants}
+            initial="initial"
+            animate="pulse"
+            className="w-2.5 h-2.5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full shadow-sm"
+          />
+          <span className="font-semibold bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-300 dark:to-gray-100 bg-clip-text text-transparent">
+            Ready
+          </span>
+        </motion.div>
       </div>
-    </div>
+
+      {/* Subtle background animation on hover */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent dark:via-white/10 pointer-events-none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isHovering ? 1 : 0 }}
+        transition={{ duration: 0.3 }}
+      />
+    </motion.div>
   )
 }
 

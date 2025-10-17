@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import PropTypes from 'prop-types'
+import { motion } from 'framer-motion'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
@@ -44,6 +45,11 @@ const styles = `
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     line-height: 1.6;
     color: #1f2937;
+    transition: box-shadow 0.3s ease-in-out;
+  }
+
+  .editor-content:focus {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
   }
 
   .editor-content h1, .editor-content h2, .editor-content h3,
@@ -272,13 +278,31 @@ export default function Editor({ initialHtml, onHtmlChange, zoomLevel = 100 }) {
   const baseFontSize = 16
   const calculatedFontSize = `${(baseFontSize * zoomLevel) / 100}px`
 
+  const editorVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }
+  }
+
+  const placeholderVariants = {
+    initial: { opacity: 0.5 },
+    animate: {
+      opacity: [0.5, 0.8, 0.5],
+      transition: { duration: 2, repeat: Infinity, ease: 'easeInOut' }
+    }
+  }
+
   return (
-    <div className="relative w-full">
+    <motion.div
+      className="relative w-full"
+      initial="hidden"
+      animate="visible"
+      variants={editorVariants}
+    >
       <style>{styles}</style>
       <RichTextPlugin
         contentEditable={
           <ContentEditable
-            className="editor-content outline-none w-full min-h-[800px] focus:outline-none"
+            className="editor-content outline-none w-full min-h-[800px] focus:outline-none p-16 rounded-lg"
             style={{
               paddingTop: marginTop,
               paddingBottom: marginBottom,
@@ -290,16 +314,19 @@ export default function Editor({ initialHtml, onHtmlChange, zoomLevel = 100 }) {
           />
         }
         placeholder={
-          <div
+          <motion.div
             className="absolute select-none pointer-events-none text-gray-400"
             style={{
               top: marginTop,
               left: marginLeft,
               fontSize: calculatedFontSize
             }}
+            variants={placeholderVariants}
+            initial="initial"
+            animate="animate"
           >
             Start typing your document...
-          </div>
+          </motion.div>
         }
         ErrorBoundary={LexicalErrorBoundary}
       />
@@ -311,7 +338,7 @@ export default function Editor({ initialHtml, onHtmlChange, zoomLevel = 100 }) {
       <ListSmartBreakPlugin />
       <MarkdownShortcutPlugin transformers={ALL_TRANSFORMERS} />
       <HtmlPlugin initialHtml={initialHtml} onHtmlChange={onHtmlChange} />
-    </div>
+    </motion.div>
   )
 }
 
