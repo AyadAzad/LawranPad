@@ -26,7 +26,7 @@ function createWindow() {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
     }
   })
 
@@ -132,29 +132,118 @@ app
     })
 
     // Custom input dialog for URLs and text input
+    // Improved input dialog without external HTML file
     ipcMain.handle('show-input-dialog', async (event, options) => {
       try {
-        const { title = 'Input', label = 'Enter value:', defaultValue = '' } = options
-
-        // For simple input, we'll use a basic approach
-        // In a real app, you might want to create a custom window for better input
-        const result = await dialog.showMessageBox({
-          type: 'question',
-          buttons: ['OK', 'Cancel'],
-          defaultId: 0,
-          title: title,
-          message: label,
-          detail: 'Please enter the value in the developer console and check the main process logs.'
-        })
-
-        if (result.response === 0) {
-          // For now, we'll use a simple approach - in production, create a proper input window
-          console.log(`Input requested: ${label}. Default value: ${defaultValue}`)
-          // Return a mock value for development
-          return defaultValue
+        const { title = 'Input', label = 'Enter value:', defaultValue = '', value = '' } = options
+        const parentWindow = BrowserWindow.fromWebContents(event.sender)
+        if (!parentWindow) {
+          return null
         }
 
-        return null
+        return new Promise((resolve) => {
+          const inputWindow = new BrowserWindow({
+            width: 400,
+            height: 180,
+            show: false,
+            modal: true,
+            parent: parentWindow,
+            webPreferences: {
+              nodeIntegration: true,
+              contextIsolation: false
+            },
+            title: title,
+            resizable: false,
+            autoHideMenuBar: true,
+            minimizable: false,
+            maximizable: false
+          })
+
+          // Create HTML content directly
+          const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+              margin: 0;
+              padding: 20px;
+              background: white;
+            }
+            .label {
+              display: block;
+              margin-bottom: 8px;
+              font-weight: 500;
+            }
+            .input {
+              width: 100%;
+              padding: 8px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              margin-bottom: 16px;
+              box-sizing: border-box;
+            }
+            .buttons {
+              display: flex;
+              justify-content: flex-end;
+              gap: 8px;
+            }
+            button {
+              padding: 6px 12px;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+            }
+            .cancel { background: #f0f0f0; }
+            .ok { background: #007acc; color: white; }
+          </style>
+        </head>
+        <body>
+          <label class="label">${label}</label>
+          <input type="text" id="input" class="input" value="${value || defaultValue}" autofocus>
+          <div class="buttons">
+            <button class="cancel" onclick="cancel()">Cancel</button>
+            <button class="ok" onclick="submit()">OK</button>
+          </div>
+          <script>
+            const { ipcRenderer } = require('electron')
+            function submit() {
+              const value = document.getElementById('input').value
+              ipcRenderer.send('dialog-result', value)
+            }
+            function cancel() {
+              ipcRenderer.send('dialog-result', null)
+            }
+            document.getElementById('input').addEventListener('keypress', (e) => {
+              if (e.key === 'Enter') submit()
+            })
+          </script>
+        </body>
+        </html>
+      `
+
+          inputWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`)
+
+          const handleDialogResult = (e, result) => {
+            if (e.sender === inputWindow.webContents) {
+              resolve(result)
+              ipcMain.removeListener('dialog-result', handleDialogResult)
+              inputWindow.close()
+            }
+          }
+
+          ipcMain.on('dialog-result', handleDialogResult)
+
+          inputWindow.on('closed', () => {
+            ipcMain.removeListener('dialog-result', handleDialogResult)
+            resolve(null)
+          })
+
+          inputWindow.once('ready-to-show', () => {
+            inputWindow.show()
+          })
+        })
       } catch (error) {
         console.error('Error showing input dialog:', error)
         return null
@@ -439,8 +528,5 @@ function convertMarkdownToHTML(markdown) {
 function convertTextToHTML(text) {
   if (!text) return ''
 
-  return text
-    .split('\n')
-    .map((line) => (line.trim() ? `<p>${line}</p>` : '<br>'))
-    .join('')
+  return text.split('\n').map((line) => (line.trim() ? `<p>${line}</p>` : '<br>').join(''))
 }

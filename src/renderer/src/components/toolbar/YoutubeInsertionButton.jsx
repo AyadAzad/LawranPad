@@ -10,35 +10,66 @@ const YouTubeInsertionButton = () => {
       // Use Electron's dialog to get YouTube URL
       const videoUrl = await window.electron.ipcRenderer.invoke('show-input-dialog', {
         title: 'Insert YouTube Video',
-        label: 'YouTube URL or Video ID:',
-        defaultValue: 'https://www.youtube.com/watch?v='
+        label: 'Enter YouTube URL or Video ID:',
+        defaultValue: 'https://www.youtube.com/watch?v=',
+        value: ''
       })
 
-      if (videoUrl) {
-        let videoId = videoUrl
+      if (videoUrl && videoUrl.trim()) {
+        let videoId = extractYouTubeId(videoUrl.trim())
 
-        // Extract video ID from various YouTube URL formats
-        if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-          const match = videoUrl.match(
-            /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/
-          )
-          videoId = match ? match[1] : videoUrl
-        }
-
-        if (videoId && videoId.length === 11) {
+        if (videoId) {
           editor.dispatchCommand(INSERT_YOUTUBE_COMMAND, { videoId })
         } else {
           // Show error dialog
           await window.electron.ipcRenderer.invoke('show-message-box', {
             type: 'error',
             title: 'Invalid YouTube URL',
-            message: 'Please enter a valid YouTube URL or Video ID'
+            message:
+              'Please enter a valid YouTube URL or Video ID.\n\nExamples:\n• https://www.youtube.com/watch?v=dQw4w9WgXcQ\n• dQw4w9WgXcQ\n• https://youtu.be/dQw4w9WgXcQ\n• https://www.youtube.com/embed/dQw4w9WgXcQ'
           })
         }
       }
     } catch (error) {
       console.error('Error inserting YouTube video:', error)
     }
+  }
+
+  // Improved YouTube ID extraction
+  const extractYouTubeId = (url) => {
+    const trimmedUrl = url.trim()
+
+    // If it's already just an ID (11 characters, YouTube standard)
+    if (/^[a-zA-Z0-9_-]{11}$/.test(trimmedUrl)) {
+      return trimmedUrl
+    }
+
+    // Various YouTube URL patterns
+    const patterns = [
+      // Standard watch URL
+      /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+      // Short youtu.be URL
+      /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+      // Embed URL
+      /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+      // With other parameters
+      /(?:youtube\.com\/watch\?.*v=)([a-zA-Z0-9_-]{11})/,
+      // Mobile URL
+      /(?:youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+      // Live URL
+      /(?:youtube\.com\/live\/)([a-zA-Z0-9_-]{11})/,
+      // Shorts URL
+      /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/
+    ]
+
+    for (const pattern of patterns) {
+      const match = trimmedUrl.match(pattern)
+      if (match && match[1]) {
+        return match[1]
+      }
+    }
+
+    return null
   }
 
   return (

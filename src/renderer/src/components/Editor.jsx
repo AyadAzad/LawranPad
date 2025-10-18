@@ -36,6 +36,25 @@ import {
 } from '@lexical/markdown'
 import { $getRoot, $createParagraphNode } from 'lexical'
 
+// Import and register YouTubeNode
+import { YoutubeNode } from '../nodes/YouTubeNode'
+
+// Add this function to register custom nodes
+export function registerCustomNodes(editor) {
+  // Register YouTubeNode
+  editor._nodes.forEach((node) => {
+    if (node.name === 'youtube') {
+      console.log('YouTubeNode already registered')
+      return
+    }
+  })
+
+  // Register the node if not already registered
+  if (!editor._nodes.has('youtube')) {
+    editor._nodes.set('youtube', YoutubeNode)
+  }
+}
+
 const styles = `
   .editor-underline {
     text-decoration: underline;
@@ -168,12 +187,30 @@ const styles = `
     margin: 1rem 0;
     border-radius: 8px;
     overflow: hidden;
+    position: relative;
+    width: 100%;
   }
 
   .editor-content .video-embed iframe {
     width: 100%;
     height: 400px;
     border: none;
+    display: block;
+  }
+
+  /* Responsive video */
+  .editor-content .video-embed.responsive {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+  }
+
+  .editor-content .video-embed.responsive iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
   }
 
   /* Print styles for A4 */
@@ -301,6 +338,17 @@ HtmlPlugin.propTypes = {
   onHtmlChange: PropTypes.func.isRequired
 }
 
+// Add this component to handle node registration
+function NodeRegistrationPlugin() {
+  const [editor] = useLexicalComposerContext()
+
+  useEffect(() => {
+    registerCustomNodes(editor)
+  }, [editor])
+
+  return null
+}
+
 export default function Editor({ initialHtml, onHtmlChange, zoomLevel = 100 }) {
   const marginTop = '72px' // 1 inch
   const marginBottom = '72px' // 1 inch
@@ -331,6 +379,7 @@ export default function Editor({ initialHtml, onHtmlChange, zoomLevel = 100 }) {
       variants={editorVariants}
     >
       <style>{styles}</style>
+      <NodeRegistrationPlugin />
       <RichTextPlugin
         contentEditable={
           <ContentEditable
