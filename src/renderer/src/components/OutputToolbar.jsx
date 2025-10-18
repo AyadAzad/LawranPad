@@ -1,9 +1,48 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { $convertToMarkdownString, TRANSFORMERS } from '@lexical/markdown'
+import { $getRoot } from 'lexical'
+import { $isImageNode } from '../nodes/ImageNode'
+import { $isYouTubeNode } from '../nodes/YoutubeNode'
 import { motion } from 'framer-motion'
 
+// Custom transformer for images
+const IMAGE_TRANSFORMER = {
+  dependencies: [],
+  export: (node, exportChildren, exportFormat) => {
+    if (!$isImageNode(node)) {
+      return null
+    }
+    const altText = node.getAltText()
+    const src = node.getSrc()
+    return `![${altText}](${src})`
+  },
+  regExp: /\!\[(.*?)\]\((.*?)\)/,
+  replace: (parent, children, match) => {
+    // This would need to be implemented for markdown import
+    return false
+  },
+  type: 'element'
+}
+
+// Custom transformer for YouTube videos
+const YOUTUBE_TRANSFORMER = {
+  dependencies: [],
+  export: (node, exportChildren, exportFormat) => {
+    if (!$isYouTubeNode(node)) {
+      return null
+    }
+    const videoId = node.getVideoId()
+    return `[![YouTube Video](https://img.youtube.com/vi/${videoId}/0.jpg)](https://www.youtube.com/watch?v=${videoId})`
+  },
+  regExp: /\[!\[YouTube Video\]\(.*?\)\]\((.*?)\)/,
+  replace: (parent, children, match) => {
+    // This would need to be implemented for markdown import
+    return false
+  },
+  type: 'element'
+}
+
 const ALL_TRANSFORMERS = [
-  TRANSFORMERS.TABLE,
   TRANSFORMERS.HEADING,
   TRANSFORMERS.QUOTE,
   TRANSFORMERS.CODE,
@@ -18,7 +57,9 @@ const ALL_TRANSFORMERS = [
   TRANSFORMERS.BOLD_UNDERSCORE,
   TRANSFORMERS.ITALIC_STAR,
   TRANSFORMERS.ITALIC_UNDERSCORE,
-  TRANSFORMERS.STRIKETHROUGH
+  TRANSFORMERS.STRIKETHROUGH,
+  IMAGE_TRANSFORMER,
+  YOUTUBE_TRANSFORMER
 ]
 
 const OutputToolbar = () => {
@@ -26,8 +67,18 @@ const OutputToolbar = () => {
 
   const handleExportToMarkdown = () => {
     editor.getEditorState().read(() => {
-      const markdown = $convertToMarkdownString(ALL_TRANSFORMERS)
-      window.electron.ipcRenderer.send('export-to-markdown', markdown)
+      try {
+        const markdown = $convertToMarkdownString(ALL_TRANSFORMERS)
+        window.electron.ipcRenderer.send('export-to-markdown', markdown)
+      } catch (error) {
+        console.error('Error exporting to Markdown:', error)
+        // Fallback: get HTML and convert basic elements
+        const rootElement = editor.getRootElement()
+        if (rootElement) {
+          const html = rootElement.innerHTML
+          window.electron.ipcRenderer.send('export-to-markdown', html)
+        }
+      }
     })
   }
 
@@ -35,7 +86,46 @@ const OutputToolbar = () => {
     const rootElement = editor.getRootElement()
     if (rootElement) {
       const html = rootElement.innerHTML
-      window.electron.ipcRenderer.send('export-to-pdf', html)
+
+      // Enhance HTML for better PDF export
+      const enhancedHtml = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+                line-height: 1.6;
+                color: #1f2937;
+                padding: 20px;
+              }
+              img {
+                max-width: 100%;
+                height: auto;
+                border-radius: 8px;
+                margin: 1rem 0;
+              }
+              .video-embed {
+                margin: 1rem 0;
+                text-align: center;
+              }
+              .video-embed iframe {
+                max-width: 100%;
+                border-radius: 8px;
+              }
+              @media print {
+                .video-embed {
+                  display: none;
+                }
+              }
+            </style>
+          </head>
+          <body>${html}</body>
+        </html>
+      `
+
+      window.electron.ipcRenderer.send('export-to-pdf', enhancedHtml)
     }
   }
 
@@ -43,7 +133,45 @@ const OutputToolbar = () => {
     const rootElement = editor.getRootElement()
     if (rootElement) {
       const html = rootElement.innerHTML
-      window.electron.ipcRenderer.send('export-to-docx', html)
+
+      // Enhance HTML for better DOCX export
+      const enhancedHtml = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.5;
+                color: #000000;
+              }
+              img {
+                max-width: 100%;
+                height: auto;
+                margin: 1rem 0;
+              }
+              .video-embed {
+                margin: 1rem 0;
+                text-align: center;
+                background: #f3f4f6;
+                padding: 20px;
+                border-radius: 8px;
+              }
+              .video-embed::before {
+                content: "YouTube Video: https://www.youtube.com/watch?v=VIDEO_ID";
+                display: block;
+                margin-bottom: 10px;
+                font-weight: bold;
+                color: #666;
+              }
+            </style>
+          </head>
+          <body>${html}</body>
+        </html>
+      `
+
+      window.electron.ipcRenderer.send('export-to-docx', enhancedHtml)
     }
   }
 
@@ -179,7 +307,11 @@ const OutputToolbar = () => {
     tap: {
       scale: [1, 1.3, 1],
       rotate: [0, -10, 10, 0],
-      backgroundColor: ['rgba(59, 130, 246, 0)', 'rgba(59, 130, 246, 0.3)', 'rgba(59, 130, 246, 0)'],
+      backgroundColor: [
+        'rgba(59, 130, 246, 0)',
+        'rgba(59, 130, 246, 0.3)',
+        'rgba(59, 130, 246, 0)'
+      ],
       transition: {
         duration: 0.4
       }

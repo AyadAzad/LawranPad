@@ -13,6 +13,8 @@ import BulletPointButton from './toolbar/BulletPointButton'
 import NumberedPointButton from './toolbar/NumberedPointButton'
 import RomanPointButton from './toolbar/RomanPointButton'
 import TableInsertionButton from './toolbar/TableInsertionButton'
+import ImageInsertionButton from './toolbar/ImageInsertionButton'
+import YoutubeInsertionButton from './toolbar/YoutubeInsertionButton'
 
 const Toolbar = () => {
   const [editor] = useLexicalComposerContext()
@@ -50,6 +52,8 @@ const Toolbar = () => {
         <RomanPointButton editor={editor} />
         <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2" />
         <TableInsertionButton editor={editor} />
+        <ImageInsertionButton editor={editor} />
+        <YoutubeInsertionButton editor={editor} />
       </div>
     </div>
   )

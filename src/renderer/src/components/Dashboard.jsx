@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
+import { motion } from 'framer-motion'
 
 const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) => {
   const [recentFiles, setRecentFiles] = useState([])
@@ -17,21 +18,48 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
     void getRecentFiles()
   }, [])
 
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
+    <motion.div
+      className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       <div className="flex-grow flex items-center justify-center">
         <div className="w-full max-w-4xl mx-auto p-8">
-          <div className="text-center mb-12">
+          <motion.div variants={itemVariants} className="text-center mb-12">
             <h1 className="text-5xl font-bold text-gray-800 dark:text-gray-100 mb-4">LawranPad</h1>
             <p className="text-xl text-gray-600 dark:text-gray-400">
               A modern and powerful text editor.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            <div
+          <motion.div
+            variants={containerVariants}
+            className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12"
+          >
+            <motion.div
+              variants={itemVariants}
               className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg hover:shadow-2xl dark:hover:shadow-blue-500/20 transition-shadow duration-300 cursor-pointer"
               onClick={onNewDocument}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               <div className="flex items-center justify-center h-16 w-16 rounded-full bg-blue-500 text-white mb-6">
                 <svg
@@ -53,10 +81,13 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
                 New Document
               </h2>
               <p className="text-gray-600 dark:text-gray-400">Start with a blank canvas.</p>
-            </div>
-            <div
+            </motion.div>
+            <motion.div
+              variants={itemVariants}
               className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg hover:shadow-2xl dark:hover:shadow-green-500/20 transition-shadow duration-300 cursor-pointer"
               onClick={onOpenFileDialog}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               <div className="flex items-center justify-center h-16 w-16 rounded-full bg-green-500 text-white mb-6">
                 <svg
@@ -78,21 +109,26 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
                 Open File
               </h2>
               <p className="text-gray-600 dark:text-gray-400">Open a file from your computer.</p>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
-          <div>
+          <motion.div variants={itemVariants}>
             <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
               Recent Documents
             </h3>
             {recentFiles.length > 0 ? (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+              <motion.div
+                variants={containerVariants}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg"
+              >
                 <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                   {recentFiles.map((file) => (
-                    <li
+                    <motion.li
                       key={file.id}
+                      variants={itemVariants}
                       className="p-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                       onClick={() => onOpenRecentDocument(file.id)}
+                      whileHover={{ scale: 1.02 }}
                     >
                       <div>
                         <p className="text-lg font-medium text-gray-800 dark:text-gray-100">
@@ -116,12 +152,15 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
                           d="M9 5l7 7-7 7"
                         />
                       </svg>
-                    </li>
+                    </motion.li>
                   ))}
                 </ul>
-              </div>
+              </motion.div>
             ) : (
-              <div className="text-center py-12 px-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+              <motion.div
+                variants={itemVariants}
+                className="text-center py-12 px-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg"
+              >
                 <div className="flex items-center justify-center h-16 w-16 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 mx-auto mb-6">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -144,15 +183,15 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
                 <p className="text-gray-600 dark:text-gray-400">
                   Create a new document or open a file to get started.
                 </p>
-              </div>
+              </motion.div>
             )}
-          </div>
+          </motion.div>
         </div>
       </div>
       <footer className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
         <p>Powered by Lawran</p>
       </footer>
-    </div>
+    </motion.div>
   )
 }
 

@@ -12,6 +12,9 @@ import { ListPlugin } from '@lexical/react/LexicalListPlugin'
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin'
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin'
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin'
+
+import { YouTubePlugin } from '../plugins/YouTubePlugin'
+import { ImagePlugin } from '../plugins/ImagePlugin'
 import ListSmartBreakPlugin from './toolbar/ListSmartBreakPlugin'
 import { $generateNodesFromDOM } from '@lexical/html'
 import {
@@ -153,11 +156,40 @@ const styles = `
     font-weight: 600;
   }
 
+  /* Image and Video styles */
+  .editor-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1rem 0;
+  }
+
+  .editor-content .video-embed {
+    margin: 1rem 0;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .editor-content .video-embed iframe {
+    width: 100%;
+    height: 400px;
+    border: none;
+  }
+
   /* Print styles for A4 */
   @media print {
     .editor-content {
       font-size: 12pt;
       line-height: 1.5;
+    }
+
+    .editor-content img {
+      max-width: 100% !important;
+      page-break-inside: avoid;
+    }
+
+    .video-embed {
+      display: none; /* Hide videos in print */
     }
   }
 `
@@ -335,6 +367,8 @@ export default function Editor({ initialHtml, onHtmlChange, zoomLevel = 100 }) {
       <ListPlugin />
       <TablePlugin />
       <LinkPlugin />
+      <ImagePlugin />
+      <YouTubePlugin />
       <ListSmartBreakPlugin />
       <MarkdownShortcutPlugin transformers={ALL_TRANSFORMERS} />
       <HtmlPlugin initialHtml={initialHtml} onHtmlChange={onHtmlChange} />

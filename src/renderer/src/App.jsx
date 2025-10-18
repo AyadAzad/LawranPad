@@ -10,6 +10,9 @@ import { TableCellNode, TableNode, TableRowNode } from '@lexical/table'
 import { ListItemNode, ListNode } from '@lexical/list'
 import { CodeHighlightNode, CodeNode } from '@lexical/code'
 import { AutoLinkNode, LinkNode } from '@lexical/link'
+
+import { YoutubeNode } from './nodes/YoutubeNode'
+import { ImageNode } from './nodes/ImageNode'
 import Dashboard from './components/Dashboard'
 import { ThemeProvider } from './contexts/ThemeContext'
 
@@ -40,7 +43,9 @@ const editorConfig = {
     quote:
       'border-l-4 border-blue-500 pl-4 py-2 my-4 bg-blue-50 dark:bg-blue-900/20 italic text-gray-700 dark:text-gray-400',
     code: 'bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono',
-    codeblock: 'bg-gray-100 dark:bg-gray-800 p-4 rounded-lg font-mono text-sm mb-4 overflow-x-auto'
+    codeblock: 'bg-gray-100 dark:bg-gray-800 p-4 rounded-lg font-mono text-sm mb-4 overflow-x-auto',
+    image: 'editor-image',
+    youtube: 'video-embed'
   },
   nodes: [
     HeadingNode,
@@ -53,8 +58,13 @@ const editorConfig = {
     CodeHighlightNode,
     CodeNode,
     AutoLinkNode,
-    LinkNode
-  ]
+    LinkNode,
+    ImageNode,
+    YoutubeNode
+  ],
+  onError: (error) => {
+    console.error('Lexical Editor Error:', error)
+  }
 }
 
 const ZOOM_PRESETS = [50, 75, 100, 125, 150, 175, 200]
@@ -156,6 +166,21 @@ function AppContent() {
     setZoomLevel(preset)
   }, [])
 
+  const handleDeleteDocument = useCallback(async () => {
+    if (!activeDocument?.id) return
+
+    try {
+      const confirmed = window.confirm('Are you sure you want to delete this document?')
+      if (!confirmed) return
+
+      await window.electron.ipcRenderer.invoke('delete-document', activeDocument.id)
+      setActiveDocument(null)
+      editorContentRef.current = ''
+    } catch (error) {
+      console.error('Failed to delete document:', error)
+    }
+  }, [activeDocument?.id])
+
   const initialConfig = {
     ...editorConfig,
     editorState: null
@@ -175,7 +200,11 @@ function AppContent() {
     <LexicalComposer key={editorKey} initialConfig={initialConfig}>
       <div className="relative min-h-screen w-full">
         <div className="min-h-screen w-full bg-gray-100 dark:bg-gray-900 flex">
-          <FileToolbar onSave={handleSaveDocument} onOpen={handleOpenDialog} />
+          <FileToolbar
+            onSave={handleSaveDocument}
+            onOpen={handleOpenDialog}
+            onDelete={handleDeleteDocument}
+          />
 
           <main className="flex-1 flex flex-col min-h-screen overflow-auto relative">
             <div className="flex-1 py-8 px-16 overflow-auto pb-16">
@@ -219,6 +248,7 @@ function AppContent() {
           onZoomReset={resetZoom}
           onZoomPreset={setZoomPreset}
           presets={ZOOM_PRESETS}
+          onDelete={handleDeleteDocument}
         />
       </div>
     </LexicalComposer>

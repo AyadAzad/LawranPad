@@ -21,6 +21,7 @@
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
     "@lexical/code": "^0.35.0",
+    "@lexical/file": "^0.37.0",
     "@lexical/html": "^0.37.0",
     "@lexical/link": "^0.35.0",
     "@lexical/list": "^0.35.0",
