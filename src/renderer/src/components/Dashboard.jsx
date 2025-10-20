@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) => {
   const [recentFiles, setRecentFiles] = useState([])
+  const { t, i18n } = useTranslation()
 
   useEffect(() => {
     const getRecentFiles = async () => {
@@ -17,6 +19,10 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
 
     void getRecentFiles()
   }, [])
+
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng)
+  }
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -45,9 +51,7 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
         <div className="w-full max-w-4xl mx-auto p-8">
           <motion.div variants={itemVariants} className="text-center mb-12">
             <h1 className="text-5xl font-bold text-gray-800 dark:text-gray-100 mb-4">LawranPad</h1>
-            <p className="text-xl text-gray-600 dark:text-gray-400">
-              A modern and powerful text editor.
-            </p>
+            <p className="text-xl text-gray-600 dark:text-gray-400">{t('app_description')}</p>
           </motion.div>
 
           <motion.div
@@ -78,9 +82,9 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
                 </svg>
               </div>
               <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                New Document
+                {t('new_document')}
               </h2>
-              <p className="text-gray-600 dark:text-gray-400">Start with a blank canvas.</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('new_document_description')}</p>
             </motion.div>
             <motion.div
               variants={itemVariants}
@@ -106,15 +110,15 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
                 </svg>
               </div>
               <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                Open File
+                {t('open_document')}
               </h2>
-              <p className="text-gray-600 dark:text-gray-400">Open a file from your computer.</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('open_from_computer')}</p>
             </motion.div>
           </motion.div>
 
           <motion.div variants={itemVariants}>
             <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
-              Recent Documents
+              {t('recent_documents')}
             </h3>
             {recentFiles.length > 0 ? (
               <motion.div
@@ -135,7 +139,7 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
                           {file.title}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Last updated: {new Date(file.updated_at).toLocaleString()}
+                          {t('last_updated')}: {new Date(file.updated_at).toLocaleString()}
                         </p>
                       </div>
                       <svg
@@ -178,10 +182,10 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                  No Recent Documents
+                  {t('no_recent_documents')}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Create a new document or open a file to get started.
+                  {t('no_recent_documents_description')}
                 </p>
               </motion.div>
             )}
@@ -189,7 +193,22 @@ const Dashboard = ({ onNewDocument, onOpenRecentDocument, onOpenFileDialog }) =>
         </div>
       </div>
       <footer className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
-        <p>Powered by Lawran</p>
+        <p>{t('powered_by')}</p>
+        <div className="mt-2">
+          <button
+            onClick={() => changeLanguage('en')}
+            className="text-sm text-blue-500 hover:underline"
+          >
+            English
+          </button>
+          <span className="mx-2">|</span>
+          <button
+            onClick={() => changeLanguage('ku')}
+            className="text-sm text-blue-500 hover:underline"
+          >
+            Kurdish
+          </button>
+        </div>
       </footer>
     </motion.div>
   )

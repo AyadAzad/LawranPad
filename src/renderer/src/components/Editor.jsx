@@ -70,6 +70,10 @@ const styles = `
     transition: box-shadow 0.3s ease-in-out;
   }
 
+  .dark .editor-content {
+    color: #d1d5db;
+  }
+
   .editor-content:focus {
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
   }
@@ -80,6 +84,11 @@ const styles = `
     color: #111827;
     margin-top: 1.5em;
     margin-bottom: 0.5em;
+  }
+
+  .dark .editor-content h1, .dark .editor-content h2, .dark .editor-content h3,
+  .dark .editor-content h4, .dark .editor-content h5, .dark .editor-content h6 {
+    color: #f9fafb;
   }
 
   .editor-content h1 {
@@ -120,12 +129,21 @@ const styles = `
     font-size: 0.875em;
   }
 
+  .dark .editor-content code {
+    background-color: #374151;
+    color: #e5e7eb;
+  }
+
   .editor-content pre {
     background-color: #f3f4f6;
     padding: 1rem;
     border-radius: 0.5rem;
     overflow-x: auto;
     margin-bottom: 1rem;
+  }
+
+  .dark .editor-content pre {
+    background-color: #1f2937;
   }
 
   .editor-content pre code {
@@ -141,13 +159,27 @@ const styles = `
     font-style: italic;
   }
 
+  .dark .editor-content blockquote {
+    border-left-color: #2563eb;
+    background-color: rgba(30, 64, 175, 0.1);
+    color: #9ca3af;
+  }
+
   .editor-content a {
     color: #3b82f6;
     text-decoration: underline;
   }
 
+  .dark .editor-content a {
+    color: #60a5fa;
+  }
+
   .editor-content a:hover {
     color: #2563eb;
+  }
+
+  .dark .editor-content a:hover {
+    color: #93c5fd;
   }
 
   .editor-content strong {
@@ -165,14 +197,23 @@ const styles = `
   }
 
   .editor-content th, .editor-content td {
-    border: 1px solid #ccc;
+    border: 1px solid #d1d5db;
     padding: 8px;
     text-align: left;
+  }
+
+  .dark .editor-content th, .dark .editor-content td {
+    border-color: #4b5563;
   }
 
   .editor-content th {
     background-color: #f3f4f6;
     font-weight: 600;
+  }
+
+  .dark .editor-content th {
+    background-color: #374151;
+    color: #f9fafb;
   }
 
   /* Image and Video styles */
@@ -396,7 +437,7 @@ export default function Editor({ initialHtml, onHtmlChange, zoomLevel = 100 }) {
         }
         placeholder={
           <motion.div
-            className="absolute select-none pointer-events-none text-gray-400"
+            className="absolute select-none pointer-events-none text-gray-400 dark:text-gray-500"
             style={{
               top: marginTop,
               left: marginLeft,

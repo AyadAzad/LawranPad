@@ -1,0 +1,12 @@
+{
+  "new_document": "New Document",
+  "open_document": "Open Document",
+  "open_from_computer": "Open from computer",
+  "app_description": "A modern and powerful text editor.",
+  "new_document_description": "Start with a blank canvas.",
+  "recent_documents": "Recent Documents",
+  "last_updated": "Last updated",
+  "no_recent_documents": "No Recent Documents",
+  "no_recent_documents_description": "Create a new document or open a file to get started.",
+  "powered_by": "Powered by Lawran"
+}
