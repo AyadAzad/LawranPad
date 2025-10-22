@@ -1,51 +1,13 @@
 import PropTypes from 'prop-types'
 import { motion } from 'framer-motion'
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import { INSERT_IMAGE_COMMAND } from '../plugins/ImagePlugin'
-import { INSERT_YOUTUBE_COMMAND } from '../plugins/YouTubePlugin'
 import ThemeToggleButton from './toolbar/ThemeToggleButton'
+import { useTranslation } from 'react-i18next'
 
-const FileToolbar = ({ onSave, onOpen }) => {
-  const [editor] = useLexicalComposerContext()
+const FileToolbar = ({ onSave, onOpen, onGoToDashboard }) => {
+  const { t } = useTranslation()
 
   const handleExit = () => {
     window.electron.ipcRenderer.send('exit-app')
-  }
-
-  const handleInsertImage = () => {
-    window.electron.ipcRenderer.invoke('select-image-file').then((filePath) => {
-      if (filePath) {
-        // For local files, we need to use the file:// protocol
-        const imageSrc = `file://${filePath}`
-        editor.dispatchCommand(INSERT_IMAGE_COMMAND, {
-          altText: 'Image',
-          src: imageSrc,
-          width: '100%',
-          height: 'auto'
-        })
-      }
-    }).catch((error) => {
-      console.error('Error selecting image file:', error)
-    })
-  }
-
-  const handleInsertYouTube = () => {
-    const videoUrl = prompt('Enter YouTube Video URL or ID:')
-    if (videoUrl) {
-      let videoId = videoUrl
-
-      // Extract video ID from various YouTube URL formats
-      if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-        const match = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)
-        videoId = match ? match[1] : videoUrl
-      }
-
-      if (videoId) {
-        editor.dispatchCommand(INSERT_YOUTUBE_COMMAND, { videoId })
-      } else {
-        alert('Please enter a valid YouTube URL or Video ID')
-      }
-    }
   }
 
   const buttonClasses =
@@ -141,35 +103,6 @@ const FileToolbar = ({ onSave, onOpen }) => {
     }
   }
 
-  // Image icon variant
-  const imageIconVariants = {
-    hover: {
-      scale: [1, 1.2, 1],
-      transition: {
-        duration: 0.5,
-        ease: 'easeInOut'
-      }
-    },
-    tap: {
-      scale: 0.8
-    }
-  }
-
-  // YouTube icon variant
-  const youtubeIconVariants = {
-    hover: {
-      scale: [1, 1.3, 1],
-      color: ['#6B7280', '#EF4444', '#6B7280'],
-      transition: {
-        duration: 0.6,
-        ease: 'easeInOut'
-      }
-    },
-    tap: {
-      scale: 0.8
-    }
-  }
-
   // Special exit button variant
   const exitButtonVariants = {
     ...buttonVariants,
@@ -201,13 +134,38 @@ const FileToolbar = ({ onSave, onOpen }) => {
         variants={titleVariants}
         whileHover="hover"
       >
-        File
+        {t('file')}
       </motion.div>
+
+      <motion.button
+        onClick={onGoToDashboard}
+        className={buttonClasses}
+        title={t('backToDashboard')}
+        variants={buttonVariants}
+        whileHover="hover"
+        whileTap="tap"
+      >
+        <motion.svg
+          className={svgIconClasses}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+          variants={iconVariants}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M11 17l-5-5m0 0l5-5m-5 5h12"
+          ></path>
+        </motion.svg>
+      </motion.button>
 
       <motion.button
         onClick={onOpen}
         className={buttonClasses}
-        title="Open File"
+        title={t('openFile')}
         variants={buttonVariants}
         whileHover="hover"
         whileTap="tap"
@@ -232,7 +190,7 @@ const FileToolbar = ({ onSave, onOpen }) => {
       <motion.button
         onClick={onSave}
         className={buttonClasses}
-        title="Save File"
+        title={t('saveFile')}
         variants={buttonVariants}
         whileHover="hover"
         whileTap="tap"
@@ -254,58 +212,6 @@ const FileToolbar = ({ onSave, onOpen }) => {
         </motion.svg>
       </motion.button>
 
-      {/* Image Insert Button */}
-      <motion.button
-        onClick={handleInsertImage}
-        className={buttonClasses}
-        title="Insert Image"
-        variants={buttonVariants}
-        whileHover="hover"
-        whileTap="tap"
-      >
-        <motion.svg
-          className={svgIconClasses}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-          variants={imageIconVariants}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-          />
-        </motion.svg>
-      </motion.button>
-
-      {/* YouTube Insert Button */}
-      <motion.button
-        onClick={handleInsertYouTube}
-        className={buttonClasses}
-        title="Insert YouTube Video"
-        variants={buttonVariants}
-        whileHover="hover"
-        whileTap="tap"
-      >
-        <motion.svg
-          className={svgIconClasses}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-          variants={youtubeIconVariants}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-          />
-        </motion.svg>
-      </motion.button>
-
       <div className="flex-grow"></div>
 
       <motion.div
@@ -320,7 +226,7 @@ const FileToolbar = ({ onSave, onOpen }) => {
       <motion.button
         onClick={handleExit}
         className={buttonClasses}
-        title="Exit"
+        title={t('exit')}
         variants={exitButtonVariants}
         whileHover="hover"
         whileTap="tap"
@@ -347,7 +253,8 @@ const FileToolbar = ({ onSave, onOpen }) => {
 
 FileToolbar.propTypes = {
   onSave: PropTypes.func.isRequired,
-  onOpen: PropTypes.func.isRequired
+  onOpen: PropTypes.func.isRequired,
+  onGoToDashboard: PropTypes.func.isRequired
 }
 
 export default FileToolbar

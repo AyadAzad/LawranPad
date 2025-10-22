@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { $getRoot } from 'lexical'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 const Footer = ({
   document,
@@ -15,10 +16,11 @@ const Footer = ({
   onZoomPreset,
   presets
 }) => {
+  const { t } = useTranslation()
   const [editor] = useLexicalComposerContext()
   const [wordCount, setWordCount] = useState(0)
   const [charCount, setCharCount] = useState(0)
-  const [lastSavedText, setLastSavedText] = useState('Not saved')
+  const [lastSavedText, setLastSavedText] = useState(t('notSaved'))
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -36,7 +38,7 @@ const Footer = ({
       })
     })
     return () => unregister()
-  }, [editor])
+  }, [editor, t])
 
   useEffect(() => {
     if (lastSaved) {
@@ -46,12 +48,12 @@ const Footer = ({
         const diffInSeconds = Math.floor((now - savedDate) / 1000)
 
         if (diffInSeconds < 5) {
-          setLastSavedText('Saved')
+          setLastSavedText(t('saved'))
         } else if (diffInSeconds < 60) {
-          setLastSavedText('A few seconds ago')
+          setLastSavedText(t('aFewSecondsAgo'))
         } else if (diffInSeconds < 3600) {
           const minutes = Math.floor(diffInSeconds / 60)
-          setLastSavedText(`${minutes} min${minutes > 1 ? 's' : ''} ago`)
+          setLastSavedText(t('minutesAgo', { count: minutes }))
         } else {
           setLastSavedText(
             new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -62,9 +64,9 @@ const Footer = ({
       const interval = setInterval(updateLastSavedText, 5000)
       return () => clearInterval(interval)
     } else {
-      setLastSavedText('Not saved')
+      setLastSavedText(t('notSaved'))
     }
-  }, [lastSaved])
+  }, [lastSaved, t])
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -194,7 +196,7 @@ const Footer = ({
             <motion.div
               className="flex items-center gap-1"
               onDoubleClick={handleDoubleClick}
-              title="Double-click to rename"
+              title={t('doubleClickToRename')}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -211,11 +213,11 @@ const Footer = ({
         />
 
         <motion.span variants={itemVariants} whileHover={{ scale: 1.05 }} className="font-medium">
-          {wordCount} words
+          {wordCount} {t('words', { count: wordCount })}
         </motion.span>
 
         <motion.span variants={itemVariants} whileHover={{ scale: 1.05 }} className="font-medium">
-          {charCount} characters
+          {charCount} {t('characters', { count: charCount })}
         </motion.span>
 
         <motion.div
@@ -226,7 +228,7 @@ const Footer = ({
         <motion.span
           variants={itemVariants}
           animate={{
-            color: lastSavedText === 'Saved' ? '#10B981' : '',
+            color: lastSavedText === t('saved') ? '#10B981' : '',
             transition: { duration: 0.3 }
           }}
           className="font-medium"
@@ -245,8 +247,8 @@ const Footer = ({
             onClick={onZoomOut}
             disabled={zoomLevel <= 50}
             className="p-2 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-r border-gray-200 dark:border-gray-600"
-            title="Zoom Out (Ctrl/Cmd + -)"
-            aria-label="Zoom Out"
+            title={t('zoomOutCtrl')}
+            aria-label={t('zoomOut')}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
@@ -266,7 +268,7 @@ const Footer = ({
               className="px-3 py-2 min-w-[80px] text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors border-r border-gray-200 dark:border-gray-600 flex items-center justify-center"
               aria-haspopup="true"
               aria-expanded={isDropdownOpen}
-              title="Select zoom level"
+              title={t('selectZoomLevel')}
               whileHover={{ backgroundColor: 'rgba(0,0,0,0.05)' }}
               whileTap={{ scale: 0.95 }}
             >
@@ -312,7 +314,7 @@ const Footer = ({
                       {preset}%
                       {preset === 100 && (
                         <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
-                          (Default)
+                          ({t('default')})
                         </span>
                       )}
                     </motion.button>
@@ -327,7 +329,7 @@ const Footer = ({
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                     whileHover={{ x: 4 }}
                   >
-                    Reset to 100%
+                    {t('resetTo100')}
                   </motion.button>
                 </motion.div>
               )}
@@ -338,8 +340,8 @@ const Footer = ({
             onClick={onZoomIn}
             disabled={zoomLevel >= 200}
             className="p-2 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            title="Zoom In (Ctrl/Cmd + +)"
-            aria-label="Zoom In"
+            title={t('zoomInCtrl')}
+            aria-label={t('zoomIn')}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
@@ -376,7 +378,7 @@ const Footer = ({
             className="w-2.5 h-2.5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full shadow-sm"
           />
           <span className="font-semibold bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-300 dark:to-gray-100 bg-clip-text text-transparent">
-            Ready
+            {t('ready')}
           </span>
         </motion.div>
       </div>

@@ -12,6 +12,7 @@ import { ListPlugin } from '@lexical/react/LexicalListPlugin'
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin'
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin'
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin'
+import { useTranslation } from 'react-i18next'
 
 import { YouTubePlugin } from '../plugins/YouTubePlugin'
 import { ImagePlugin } from '../plugins/ImagePlugin'
@@ -391,6 +392,7 @@ function NodeRegistrationPlugin() {
 }
 
 export default function Editor({ initialHtml, onHtmlChange, zoomLevel = 100 }) {
+  const { t } = useTranslation()
   const marginTop = '72px' // 1 inch
   const marginBottom = '72px' // 1 inch
   const marginLeft = '72px' // 1 inch
@@ -447,7 +449,7 @@ export default function Editor({ initialHtml, onHtmlChange, zoomLevel = 100 }) {
             initial="initial"
             animate="animate"
           >
-            Start typing your document...
+            {t('startTyping')}
           </motion.div>
         }
         ErrorBoundary={LexicalErrorBoundary}

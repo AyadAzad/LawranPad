@@ -4,6 +4,7 @@ import { $getRoot } from 'lexical'
 import { $isImageNode } from '../nodes/ImageNode'
 import { $isYouTubeNode } from '../nodes/YoutubeNode'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 // Custom transformer for images
 const IMAGE_TRANSFORMER = {
@@ -63,6 +64,7 @@ const ALL_TRANSFORMERS = [
 ]
 
 const OutputToolbar = () => {
+  const { t } = useTranslation()
   const [editor] = useLexicalComposerContext()
 
   const handleExportToMarkdown = () => {
@@ -330,13 +332,13 @@ const OutputToolbar = () => {
         variants={titleVariants}
         whileHover="hover"
       >
-        Output
+        {t('output')}
       </motion.div>
 
       <motion.button
         onClick={handleExportToMarkdown}
         className={buttonClasses}
-        title="Export as Markdown"
+        title={t('exportAsMarkdown')}
         variants={buttonVariants}
         whileHover="hover"
         whileTap={{ ...buttonVariants.tap, ...successVariants.tap }}
@@ -361,7 +363,7 @@ const OutputToolbar = () => {
       <motion.button
         onClick={handleExportToPDF}
         className={buttonClasses}
-        title="Export as PDF"
+        title={t('exportAsPDF')}
         variants={buttonVariants}
         whileHover="hover"
         whileTap={{ ...buttonVariants.tap, ...successVariants.tap }}
@@ -386,7 +388,7 @@ const OutputToolbar = () => {
       <motion.button
         onClick={handleExportToDocx}
         className={buttonClasses}
-        title="Export as DOCX"
+        title={t('exportAsDOCX')}
         variants={buttonVariants}
         whileHover="hover"
         whileTap={{ ...buttonVariants.tap, ...successVariants.tap }}
