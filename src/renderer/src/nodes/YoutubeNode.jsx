@@ -39,7 +39,7 @@ export class YoutubeNode extends DecoratorNode {
   decorate() {
     return createElement(YouTubeComponent, {
       videoId: this.__videoId,
-      nodeKey: this.getKey(),
+      nodeKey: this.getKey()
     })
   }
 
@@ -47,7 +47,7 @@ export class YoutubeNode extends DecoratorNode {
     return {
       type: 'youtube',
       version: 1,
-      videoId: this.__videoId,
+      videoId: this.__videoId
     }
   }
 
@@ -65,7 +65,8 @@ export class YoutubeNode extends DecoratorNode {
     iframe.width = '100%'
     iframe.height = '400'
     iframe.frameBorder = '0'
-    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+    iframe.allow =
+      'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
     iframe.allowFullScreen = true
     iframe.title = 'YouTube video'
     iframe.style.borderRadius = '8px'
@@ -73,6 +74,41 @@ export class YoutubeNode extends DecoratorNode {
 
     element.appendChild(iframe)
     return { element }
+  }
+
+  static importDOM() {
+    return {
+      div: (domNode) => {
+        if (domNode.classList.contains('video-embed')) {
+          const iframe = domNode.querySelector('iframe')
+          if (iframe && iframe.src.includes('youtube.com/embed/')) {
+            return {
+              conversion: (domNode) => {
+                const iframe = domNode.querySelector('iframe')
+                const videoId = iframe.src.split('embed/')[1].split('?')[0]
+                const node = $createYouTubeNode(videoId)
+                return { node }
+              },
+              priority: 1
+            }
+          }
+        }
+        return null
+      },
+      iframe: (domNode) => {
+        if (domNode.src.includes('youtube.com/embed/')) {
+          return {
+            conversion: (domNode) => {
+              const videoId = domNode.src.split('embed/')[1].split('?')[0]
+              const node = $createYouTubeNode(videoId)
+              return { node }
+            },
+            priority: 1
+          }
+        }
+        return null
+      }
+    }
   }
 }
 
@@ -99,12 +135,14 @@ function YouTubeComponent({ videoId, nodeKey }) {
         }}
         referrerPolicy="no-referrer"
       />
-      <div style={{
-        fontSize: '12px',
-        color: '#666',
-        marginTop: '8px',
-        textAlign: 'center'
-      }}>
+      <div
+        style={{
+          fontSize: '12px',
+          color: '#666',
+          marginTop: '8px',
+          textAlign: 'center'
+        }}
+      >
         YouTube Video: {videoId}
       </div>
     </div>

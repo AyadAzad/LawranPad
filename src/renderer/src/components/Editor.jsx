@@ -36,6 +36,7 @@ import {
   ORDERED_LIST
 } from '@lexical/markdown'
 import { $getRoot, $createParagraphNode } from 'lexical'
+import { TableNode } from '@lexical/table'
 
 // Import and register YouTubeNode
 import { YoutubeNode } from '../nodes/YouTubeNode'
@@ -294,82 +295,41 @@ const ALL_TRANSFORMERS = [
 function HtmlPlugin({ initialHtml, onHtmlChange }) {
   const [editor] = useLexicalComposerContext()
   const isInitialLoad = useRef(true)
-  const hasLoadedContent = useRef(false)
-  const initialHtmlRef = useRef(initialHtml)
 
-  // Load initial HTML content
   useEffect(() => {
-    if (!editor) {
-      return
-    }
-
-    if (initialHtml && !hasLoadedContent.current) {
-      hasLoadedContent.current = true
-      initialHtmlRef.current = initialHtml
-
-      queueMicrotask(() => {
-        editor.update(
-          () => {
-            try {
-              const parser = new DOMParser()
-              const dom = parser.parseFromString(initialHtml, 'text/html')
-              const nodes = $generateNodesFromDOM(editor, dom)
-              const root = $getRoot()
-              root.clear()
-              root.append(...nodes)
-            } catch (error) {
-              console.error('Error converting HTML:', error)
-              const root = $getRoot()
-              root.clear()
-              const paragraph = $createParagraphNode()
-              root.append(paragraph)
-            }
-          },
-          {
-            discrete: true
+    if (editor && initialHtml) {
+      editor.update(
+        () => {
+          try {
+            const parser = new DOMParser()
+            const dom = parser.parseFromString(initialHtml, 'text/html')
+            const nodes = $generateNodesFromDOM(editor, dom)
+            const root = $getRoot()
+            root.clear()
+            root.append(...nodes)
+          } catch (error) {
+            console.error('Error converting HTML:', error)
+            const root = $getRoot()
+            root.clear()
+            const paragraph = $createParagraphNode()
+            root.append(paragraph)
           }
-        )
-
-        setTimeout(() => {
-          isInitialLoad.current = false
-        }, 100)
-      })
-    } else if (!initialHtml && !hasLoadedContent.current) {
-      hasLoadedContent.current = true
-
-      editor.update(() => {
-        const root = $getRoot()
-        if (root.getChildrenSize() === 0) {
-          const paragraph = $createParagraphNode()
-          root.append(paragraph)
-        }
-      })
-
-      setTimeout(() => {
-        isInitialLoad.current = false
-      }, 100)
+        },
+        { discrete: true }
+      )
     }
   }, [editor, initialHtml])
 
-  useEffect(() => {
-    hasLoadedContent.current = false
-  }, [initialHtml])
-
-  const handleChange = () => {
-    if (isInitialLoad.current) {
+  const handleChange = (editorState, editor) => {
+    if (isInitialLoad.current && initialHtml) {
+      isInitialLoad.current = false
       return
     }
-    // Use a timeout to ensure the DOM is updated before we read it.
-    setTimeout(() => {
-      const rootElement = editor.getRootElement()
-      if (rootElement) {
-        const htmlString = rootElement.innerHTML
-        if (htmlString !== initialHtmlRef.current) {
-          initialHtmlRef.current = htmlString
-          onHtmlChange(htmlString)
-        }
-      }
-    }, 0)
+
+    editor.update(() => {
+      const htmlString = editor.getRootElement().innerHTML
+      onHtmlChange(htmlString)
+    })
   }
 
   return <OnChangePlugin onChange={handleChange} ignoreSelectionChange />
@@ -472,4 +432,19 @@ Editor.propTypes = {
   initialHtml: PropTypes.string,
   onHtmlChange: PropTypes.func.isRequired,
   zoomLevel: PropTypes.number
+}
+
+// Monkey patch TableNode to fix HTML conversion issue
+const originalImportDOM = TableNode.importDOM
+TableNode.importDOM = function () {
+  const tableElement = originalImportDOM.call(this)
+  if (tableElement) {
+    tableElement.after = (nodes) => {
+      const tableNode = nodes[0]
+      const newParent = tableNode.getParent()
+      newParent.insertAfter(tableNode)
+      return []
+    }
+  }
+  return tableElement
 }

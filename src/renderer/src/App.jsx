@@ -76,6 +76,11 @@ function AppContent() {
   const [zoomLevel, setZoomLevel] = useState(100)
   const editorContentRef = useRef('')
 
+  const handleGoToDashboard = useCallback(() => {
+    setActiveDocument(null)
+    editorContentRef.current = ''
+  }, [])
+
   const loadDocument = useCallback(async (docId) => {
     try {
       const doc = await window.electron.ipcRenderer.invoke('get-document-content', docId)
@@ -203,7 +208,7 @@ function AppContent() {
           <FileToolbar
             onSave={handleSaveDocument}
             onOpen={handleOpenDialog}
-            onDelete={handleDeleteDocument}
+            onGoToDashboard={handleGoToDashboard}
           />
 
           <main className="flex-1 flex flex-col min-h-screen overflow-auto relative">
@@ -240,7 +245,7 @@ function AppContent() {
         </div>
         <Footer
           document={activeDocument}
-          lastSaved={lastSaved}
+          lastSaved={lastSaved?.getTime()}
           onRename={handleRenameDocument}
           zoomLevel={zoomLevel}
           onZoomIn={increaseZoom}
