@@ -12,13 +12,11 @@ import { ListPlugin } from '@lexical/react/LexicalListPlugin'
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin'
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin'
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin'
+import { HorizontalRulePlugin } from '@lexical/react/LexicalHorizontalRulePlugin'
 import { useTranslation } from 'react-i18next'
-
-import { YouTubePlugin } from '../plugins/YouTubePlugin'
-import { ImagePlugin } from '../plugins/ImagePlugin'
-import ListSmartBreakPlugin from './toolbar/ListSmartBreakPlugin'
-import { $generateNodesFromDOM } from '@lexical/html'
 import {
+  $convertFromMarkdownString,
+  $convertToMarkdownString,
   HEADING,
   QUOTE,
   CODE,
@@ -36,26 +34,8 @@ import {
   ORDERED_LIST
 } from '@lexical/markdown'
 import { $getRoot, $createParagraphNode } from 'lexical'
-import { TableNode } from '@lexical/table'
 
-// Import and register YouTubeNode
-import { YoutubeNode } from '../nodes/YouTubeNode'
-
-// Add this function to register custom nodes
-export function registerCustomNodes(editor) {
-  // Register YouTubeNode
-  editor._nodes.forEach((node) => {
-    if (node.name === 'youtube') {
-      console.log('YouTubeNode already registered')
-      return
-    }
-  })
-
-  // Register the node if not already registered
-  if (!editor._nodes.has('youtube')) {
-    editor._nodes.set('youtube', YoutubeNode)
-  }
-}
+import ListSmartBreakPlugin from './toolbar/ListSmartBreakPlugin'
 
 const styles = `
   .editor-underline {
@@ -218,58 +198,10 @@ const styles = `
     color: #f9fafb;
   }
 
-  /* Image and Video styles */
-  .editor-content img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    margin: 1rem 0;
-  }
-
-  .editor-content .video-embed {
-    margin: 1rem 0;
-    border-radius: 8px;
-    overflow: hidden;
-    position: relative;
-    width: 100%;
-  }
-
-  .editor-content .video-embed iframe {
-    width: 100%;
-    height: 400px;
-    border: none;
-    display: block;
-  }
-
-  /* Responsive video */
-  .editor-content .video-embed.responsive {
-    position: relative;
-    padding-bottom: 56.25%; /* 16:9 aspect ratio */
-    height: 0;
-  }
-
-  .editor-content .video-embed.responsive iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  /* Print styles for A4 */
   @media print {
     .editor-content {
       font-size: 12pt;
       line-height: 1.5;
-    }
-
-    .editor-content img {
-      max-width: 100% !important;
-      page-break-inside: avoid;
-    }
-
-    .video-embed {
-      display: none; /* Hide videos in print */
     }
   }
 `
@@ -292,71 +224,62 @@ const ALL_TRANSFORMERS = [
   STRIKETHROUGH
 ]
 
-function HtmlPlugin({ initialHtml, onHtmlChange }) {
+function MarkdownPlugin({ initialContent, onContentChange }) {
   const [editor] = useLexicalComposerContext()
   const isInitialLoad = useRef(true)
+  const hasSetInitialContent = useRef(false)
 
   useEffect(() => {
-    if (editor && initialHtml) {
-      editor.update(
-        () => {
-          try {
-            const parser = new DOMParser()
-            const dom = parser.parseFromString(initialHtml, 'text/html')
-            const nodes = $generateNodesFromDOM(editor, dom)
-            const root = $getRoot()
-            root.clear()
-            root.append(...nodes)
-          } catch (error) {
-            console.error('Error converting HTML:', error)
-            const root = $getRoot()
-            root.clear()
-            const paragraph = $createParagraphNode()
-            root.append(paragraph)
-          }
-        },
-        { discrete: true }
-      )
+    if (editor && initialContent && !hasSetInitialContent.current) {
+      const timer = setTimeout(() => {
+        editor.update(
+          () => {
+            try {
+              $convertFromMarkdownString(initialContent, ALL_TRANSFORMERS)
+              hasSetInitialContent.current = true
+            } catch (error) {
+              console.error('Error converting Markdown:', error)
+              const root = $getRoot()
+              root.clear()
+              const paragraph = $createParagraphNode()
+              root.append(paragraph)
+              hasSetInitialContent.current = true
+            }
+          },
+          { discrete: true }
+        )
+      }, 100)
+
+      return () => clearTimeout(timer)
     }
-  }, [editor, initialHtml])
+  }, [editor, initialContent])
 
   const handleChange = (editorState, editor) => {
-    if (isInitialLoad.current && initialHtml) {
+    if (isInitialLoad.current && initialContent) {
       isInitialLoad.current = false
       return
     }
 
     editor.update(() => {
-      const htmlString = editor.getRootElement().innerHTML
-      onHtmlChange(htmlString)
+      const markdown = $convertToMarkdownString(ALL_TRANSFORMERS)
+      onContentChange(markdown)
     })
   }
 
   return <OnChangePlugin onChange={handleChange} ignoreSelectionChange />
 }
 
-HtmlPlugin.propTypes = {
-  initialHtml: PropTypes.string,
-  onHtmlChange: PropTypes.func.isRequired
+MarkdownPlugin.propTypes = {
+  initialContent: PropTypes.string,
+  onContentChange: PropTypes.func.isRequired
 }
 
-// Add this component to handle node registration
-function NodeRegistrationPlugin() {
-  const [editor] = useLexicalComposerContext()
-
-  useEffect(() => {
-    registerCustomNodes(editor)
-  }, [editor])
-
-  return null
-}
-
-export default function Editor({ initialHtml, onHtmlChange, zoomLevel = 100 }) {
+export default function Editor({ initialContent, onContentChange, zoomLevel = 100 }) {
   const { t } = useTranslation()
-  const marginTop = '72px' // 1 inch
-  const marginBottom = '72px' // 1 inch
-  const marginLeft = '72px' // 1 inch
-  const marginRight = '72px' // 1 inch
+  const marginTop = '72px'
+  const marginBottom = '72px'
+  const marginLeft = '72px'
+  const marginRight = '72px'
 
   const baseFontSize = 16
   const calculatedFontSize = `${(baseFontSize * zoomLevel) / 100}px`
@@ -382,7 +305,6 @@ export default function Editor({ initialHtml, onHtmlChange, zoomLevel = 100 }) {
       variants={editorVariants}
     >
       <style>{styles}</style>
-      <NodeRegistrationPlugin />
       <RichTextPlugin
         contentEditable={
           <ContentEditable
@@ -419,32 +341,16 @@ export default function Editor({ initialHtml, onHtmlChange, zoomLevel = 100 }) {
       <ListPlugin />
       <TablePlugin />
       <LinkPlugin />
-      <ImagePlugin />
-      <YouTubePlugin />
+      <HorizontalRulePlugin />
       <ListSmartBreakPlugin />
       <MarkdownShortcutPlugin transformers={ALL_TRANSFORMERS} />
-      <HtmlPlugin initialHtml={initialHtml} onHtmlChange={onHtmlChange} />
+      <MarkdownPlugin initialContent={initialContent} onContentChange={onContentChange} />
     </motion.div>
   )
 }
 
 Editor.propTypes = {
-  initialHtml: PropTypes.string,
-  onHtmlChange: PropTypes.func.isRequired,
+  initialContent: PropTypes.string,
+  onContentChange: PropTypes.func.isRequired,
   zoomLevel: PropTypes.number
-}
-
-// Monkey patch TableNode to fix HTML conversion issue
-const originalImportDOM = TableNode.importDOM
-TableNode.importDOM = function () {
-  const tableElement = originalImportDOM.call(this)
-  if (tableElement) {
-    tableElement.after = (nodes) => {
-      const tableNode = nodes[0]
-      const newParent = tableNode.getParent()
-      newParent.insertAfter(tableNode)
-      return []
-    }
-  }
-  return tableElement
 }

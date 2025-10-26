@@ -13,8 +13,12 @@ import BulletPointButton from './toolbar/BulletPointButton'
 import NumberedPointButton from './toolbar/NumberedPointButton'
 import RomanPointButton from './toolbar/RomanPointButton'
 import TableInsertionButton from './toolbar/TableInsertionButton'
-import ImageInsertionButton from './toolbar/ImageInsertionButton'
-import YoutubeInsertionButton from './toolbar/YoutubeInsertionButton'
+import CodeBlockButton from './toolbar/CodeBlockButton'
+import BlockquoteButton from './toolbar/BlockquoteButton'
+import HorizontalRuleButton from './toolbar/HorizontalRuleButton'
+import HeadingsDropdown from './toolbar/HeadingsDropdown'
+import InsertLinkButton from './toolbar/InsertLinkButton'
+import ChecklistButton from './toolbar/ChecklistButton'
 
 const Toolbar = () => {
   const [editor] = useLexicalComposerContext()
@@ -39,6 +43,7 @@ const Toolbar = () => {
 
       {/* Block Style Group */}
       <div className="flex items-center gap-1">
+        <HeadingsDropdown />
         <AlignmentDropdown editor={editor} />
         <LineSpacingDropdown editor={editor} />
       </div>
@@ -50,10 +55,13 @@ const Toolbar = () => {
         <BulletPointButton editor={editor} />
         <NumberedPointButton editor={editor} />
         <RomanPointButton editor={editor} />
+        <ChecklistButton />
         <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2" />
+        <InsertLinkButton />
         <TableInsertionButton editor={editor} />
-        <ImageInsertionButton editor={editor} />
-        <YoutubeInsertionButton editor={editor} />
+        <CodeBlockButton />
+        <BlockquoteButton />
+        <HorizontalRuleButton />
       </div>
     </div>
   )

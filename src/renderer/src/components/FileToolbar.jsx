@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import ThemeToggleButton from './toolbar/ThemeToggleButton'
 import { useTranslation } from 'react-i18next'
 
-const FileToolbar = ({ onSave, onOpen, onGoToDashboard }) => {
+const FileToolbar = ({ onSave, onSaveAs, onOpen, onGoToDashboard }) => {
   const { t } = useTranslation()
 
   const handleExit = () => {
@@ -212,6 +212,31 @@ const FileToolbar = ({ onSave, onOpen, onGoToDashboard }) => {
         </motion.svg>
       </motion.button>
 
+      <motion.button
+        onClick={onSaveAs}
+        className={buttonClasses}
+        title={t('saveFileAs')}
+        variants={buttonVariants}
+        whileHover="hover"
+        whileTap="tap"
+      >
+        <motion.svg
+          className={svgIconClasses}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+          variants={iconVariants}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+          ></path>
+        </motion.svg>
+      </motion.button>
+
       <div className="flex-grow"></div>
 
       <motion.div
@@ -253,6 +278,7 @@ const FileToolbar = ({ onSave, onOpen, onGoToDashboard }) => {
 
 FileToolbar.propTypes = {
   onSave: PropTypes.func.isRequired,
+  onSaveAs: PropTypes.func.isRequired,
   onOpen: PropTypes.func.isRequired,
   onGoToDashboard: PropTypes.func.isRequired
 }

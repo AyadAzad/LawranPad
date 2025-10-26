@@ -1,18 +1,16 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import Editor from './components/Editor'
 import Toolbar from './components/Toolbar'
 import FileToolbar from './components/FileToolbar'
-import OutputToolbar from './components/OutputToolbar'
 import Footer from './components/Footer'
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
 import { TableCellNode, TableNode, TableRowNode } from '@lexical/table'
 import { ListItemNode, ListNode } from '@lexical/list'
 import { CodeHighlightNode, CodeNode } from '@lexical/code'
 import { AutoLinkNode, LinkNode } from '@lexical/link'
+import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode'
 
-import { YoutubeNode } from './nodes/YoutubeNode'
-import { ImageNode } from './nodes/ImageNode'
 import Dashboard from './components/Dashboard'
 import { ThemeProvider } from './contexts/ThemeContext'
 
@@ -44,8 +42,7 @@ const editorConfig = {
       'border-l-4 border-blue-500 pl-4 py-2 my-4 bg-blue-50 dark:bg-blue-900/20 italic text-gray-700 dark:text-gray-400',
     code: 'bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono',
     codeblock: 'bg-gray-100 dark:bg-gray-800 p-4 rounded-lg font-mono text-sm mb-4 overflow-x-auto',
-    image: 'editor-image',
-    youtube: 'video-embed'
+    horizontalRule: 'my-6 border-gray-300 dark:border-gray-700'
   },
   nodes: [
     HeadingNode,
@@ -59,8 +56,7 @@ const editorConfig = {
     CodeNode,
     AutoLinkNode,
     LinkNode,
-    ImageNode,
-    YoutubeNode
+    HorizontalRuleNode
   ],
   onError: (error) => {
     console.error('Lexical Editor Error:', error)
@@ -74,10 +70,12 @@ function AppContent() {
   const [editorKey, setEditorKey] = useState(Date.now())
   const [lastSaved, setLastSaved] = useState(null)
   const [zoomLevel, setZoomLevel] = useState(100)
+  const [initialContent, setInitialContent] = useState('')
   const editorContentRef = useRef('')
 
   const handleGoToDashboard = useCallback(() => {
     setActiveDocument(null)
+    setInitialContent('')
     editorContentRef.current = ''
   }, [])
 
@@ -86,7 +84,8 @@ function AppContent() {
       const doc = await window.electron.ipcRenderer.invoke('get-document-content', docId)
       if (doc) {
         setActiveDocument(doc)
-        editorContentRef.current = doc.content
+        setInitialContent(doc.content || '')
+        editorContentRef.current = doc.content || ''
         setLastSaved(new Date(doc.updated_at))
         setEditorKey(Date.now())
       }
@@ -133,6 +132,36 @@ function AppContent() {
     }
   }, [activeDocument?.id])
 
+  const handleSaveAsDocument = useCallback(async () => {
+    if (!activeDocument?.id) return
+    try {
+      const updatedDoc = await window.electron.ipcRenderer.invoke('save-file-as', {
+        id: activeDocument.id,
+        content: editorContentRef.current
+      })
+      if (updatedDoc) {
+        setActiveDocument(updatedDoc)
+        setLastSaved(new Date(updatedDoc.updated_at))
+      }
+    } catch (error) {
+      console.error('Failed to save document as:', error)
+    }
+  }, [activeDocument?.id])
+
+  useEffect(() => {
+    window.electron.ipcRenderer.on('new-document', handleNewDocument)
+    window.electron.ipcRenderer.on('open-document', handleOpenDialog)
+    window.electron.ipcRenderer.on('save-document', handleSaveDocument)
+    window.electron.ipcRenderer.on('save-document-as', handleSaveAsDocument)
+
+    return () => {
+      window.electron.ipcRenderer.removeAllListeners('new-document')
+      window.electron.ipcRenderer.removeAllListeners('open-document')
+      window.electron.ipcRenderer.removeAllListeners('save-document')
+      window.electron.ipcRenderer.removeAllListeners('save-document-as')
+    }
+  }, [handleNewDocument, handleOpenDialog, handleSaveDocument, handleSaveAsDocument])
+
   const handleRenameDocument = useCallback(
     async (newTitle) => {
       if (!activeDocument?.id) return
@@ -151,8 +180,8 @@ function AppContent() {
     [activeDocument?.id]
   )
 
-  const handleHtmlChange = useCallback((html) => {
-    editorContentRef.current = html
+  const handleContentChange = useCallback((content) => {
+    editorContentRef.current = content
   }, [])
 
   const increaseZoom = useCallback(() => {
@@ -186,11 +215,6 @@ function AppContent() {
     }
   }, [activeDocument?.id])
 
-  const initialConfig = {
-    ...editorConfig,
-    editorState: null
-  }
-
   if (!activeDocument) {
     return (
       <Dashboard
@@ -202,11 +226,12 @@ function AppContent() {
   }
 
   return (
-    <LexicalComposer key={editorKey} initialConfig={initialConfig}>
+    <LexicalComposer key={editorKey} initialConfig={editorConfig}>
       <div className="relative min-h-screen w-full">
         <div className="min-h-screen w-full bg-gray-100 dark:bg-gray-900 flex">
           <FileToolbar
             onSave={handleSaveDocument}
+            onSaveAs={handleSaveAsDocument}
             onOpen={handleOpenDialog}
             onGoToDashboard={handleGoToDashboard}
           />
@@ -231,8 +256,8 @@ function AppContent() {
                   </div>
                   <div className="relative">
                     <Editor
-                      initialHtml={activeDocument.content}
-                      onHtmlChange={handleHtmlChange}
+                      initialContent={activeDocument.content}
+                      onContentChange={handleContentChange}
                       zoomLevel={zoomLevel}
                     />
                   </div>
@@ -240,8 +265,6 @@ function AppContent() {
               </div>
             </div>
           </main>
-
-          <OutputToolbar />
         </div>
         <Footer
           document={activeDocument}
