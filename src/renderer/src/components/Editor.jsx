@@ -9,7 +9,6 @@ import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin'
 import { ListPlugin } from '@lexical/react/LexicalListPlugin'
-import { TablePlugin } from '@lexical/react/LexicalTablePlugin'
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin'
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin'
 import { HorizontalRulePlugin } from '@lexical/react/LexicalHorizontalRulePlugin'
@@ -17,21 +16,7 @@ import { useTranslation } from 'react-i18next'
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
-  HEADING,
-  QUOTE,
-  CODE,
-  LINK,
-  BOLD_ITALIC_STAR,
-  BOLD_ITALIC_UNDERSCORE,
-  BOLD_STAR,
-  BOLD_UNDERSCORE,
-  ITALIC_STAR,
-  ITALIC_UNDERSCORE,
-  STRIKETHROUGH,
-  CHECK_LIST,
-  INLINE_CODE,
-  UNORDERED_LIST,
-  ORDERED_LIST
+  TRANSFORMERS
 } from '@lexical/markdown'
 import { $getRoot, $createParagraphNode } from 'lexical'
 
@@ -172,32 +157,6 @@ const styles = `
     font-style: italic;
   }
 
-  .editor-content table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 1rem;
-  }
-
-  .editor-content th, .editor-content td {
-    border: 1px solid #d1d5db;
-    padding: 8px;
-    text-align: left;
-  }
-
-  .dark .editor-content th, .dark .editor-content td {
-    border-color: #4b5563;
-  }
-
-  .editor-content th {
-    background-color: #f3f4f6;
-    font-weight: 600;
-  }
-
-  .dark .editor-content th {
-    background-color: #374151;
-    color: #f9fafb;
-  }
-
   @media print {
     .editor-content {
       font-size: 12pt;
@@ -206,23 +165,7 @@ const styles = `
   }
 `
 
-const ALL_TRANSFORMERS = [
-  HEADING,
-  QUOTE,
-  CODE,
-  UNORDERED_LIST,
-  ORDERED_LIST,
-  CHECK_LIST,
-  INLINE_CODE,
-  LINK,
-  BOLD_ITALIC_STAR,
-  BOLD_ITALIC_UNDERSCORE,
-  BOLD_STAR,
-  BOLD_UNDERSCORE,
-  ITALIC_STAR,
-  ITALIC_UNDERSCORE,
-  STRIKETHROUGH
-]
+const ALL_TRANSFORMERS = Object.values(TRANSFORMERS).filter(t => t !== TRANSFORMERS.CHECK_LIST);
 
 function MarkdownPlugin({ initialContent, onContentChange }) {
   const [editor] = useLexicalComposerContext()
@@ -339,7 +282,6 @@ export default function Editor({ initialContent, onContentChange, zoomLevel = 10
       <HistoryPlugin />
       <AutoFocusPlugin />
       <ListPlugin />
-      <TablePlugin />
       <LinkPlugin />
       <HorizontalRulePlugin />
       <ListSmartBreakPlugin />

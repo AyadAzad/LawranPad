@@ -2,10 +2,8 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import Editor from './components/Editor'
 import Toolbar from './components/Toolbar'
-import FileToolbar from './components/FileToolbar'
 import Footer from './components/Footer'
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
-import { TableCellNode, TableNode, TableRowNode } from '@lexical/table'
 import { ListItemNode, ListNode } from '@lexical/list'
 import { CodeHighlightNode, CodeNode } from '@lexical/code'
 import { AutoLinkNode, LinkNode } from '@lexical/link'
@@ -49,9 +47,6 @@ const editorConfig = {
     QuoteNode,
     ListItemNode,
     ListNode,
-    TableCellNode,
-    TableNode,
-    TableRowNode,
     CodeHighlightNode,
     CodeNode,
     AutoLinkNode,
@@ -229,13 +224,6 @@ function AppContent() {
     <LexicalComposer key={editorKey} initialConfig={editorConfig}>
       <div className="relative min-h-screen w-full">
         <div className="min-h-screen w-full bg-gray-100 dark:bg-gray-900 flex">
-          <FileToolbar
-            onSave={handleSaveDocument}
-            onSaveAs={handleSaveAsDocument}
-            onOpen={handleOpenDialog}
-            onGoToDashboard={handleGoToDashboard}
-          />
-
           <main className="flex-1 flex flex-col min-h-screen overflow-auto relative">
             <div className="flex-1 py-8 px-16 overflow-auto pb-16">
               <div
@@ -277,6 +265,7 @@ function AppContent() {
           onZoomPreset={setZoomPreset}
           presets={ZOOM_PRESETS}
           onDelete={handleDeleteDocument}
+          onGoToDashboard={handleGoToDashboard}
         />
       </div>
     </LexicalComposer>

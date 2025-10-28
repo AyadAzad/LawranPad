@@ -16,7 +16,7 @@ export default function BlockquoteButton() {
   }
 
   return (
-    <button onClick={handleClick} className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700" title="Insert Blockquote">
+    <button onClick={handleClick} className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-white" title="Insert Blockquote">
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 17l5-5-5-5M6 17l5-5-5-5"></path>
       </svg>

@@ -221,6 +221,122 @@ app
       }
     })
 
+    ipcMain.handle('show-input-dialog', async (event, options) => {
+      try {
+        const { title = 'Input', label = 'Enter value:', defaultValue = '' } = options
+        const parentWindow = BrowserWindow.fromWebContents(event.sender)
+        if (!parentWindow) {
+          return null
+        }
+
+        return new Promise((resolve) => {
+          const inputWindow = new BrowserWindow({
+            width: 400,
+            height: 180,
+            show: false,
+            modal: true,
+            parent: parentWindow,
+            webPreferences: {
+              nodeIntegration: true,
+              contextIsolation: false
+            },
+            title: title,
+            resizable: false,
+            autoHideMenuBar: true,
+            minimizable: false,
+            maximizable: false
+          })
+
+          const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+              margin: 0;
+              padding: 20px;
+              background: white;
+            }
+            .label {
+              display: block;
+              margin-bottom: 8px;
+              font-weight: 500;
+            }
+            .input {
+              width: 100%;
+              padding: 8px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              margin-bottom: 16px;
+              box-sizing: border-box;
+            }
+            .buttons {
+              display: flex;
+              justify-content: flex-end;
+              gap: 8px;
+            }
+            button {
+              padding: 6px 12px;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+            }
+            .cancel { background: #f0f0f0; }
+            .ok { background: #007acc; color: white; }
+          </style>
+        </head>
+        <body>
+          <label class="label">${label}</label>
+          <input type="text" id="input" class="input" value="${defaultValue}" autofocus>
+          <div class="buttons">
+            <button class="cancel" onclick="cancel()">Cancel</button>
+            <button class="ok" onclick="submit()">OK</button>
+          </div>
+          <script>
+            const { ipcRenderer } = require('electron')
+            function submit() {
+              const value = document.getElementById('input').value
+              ipcRenderer.send('dialog-result', value)
+            }
+            function cancel() {
+              ipcRenderer.send('dialog-result', null)
+            }
+            document.getElementById('input').addEventListener('keypress', (e) => {
+              if (e.key === 'Enter') submit()
+            })
+          </script>
+        </body>
+        </html>
+      `
+
+          inputWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`)
+
+          const handleDialogResult = (e, result) => {
+            if (e.sender === inputWindow.webContents) {
+              resolve(result)
+              ipcMain.removeListener('dialog-result', handleDialogResult)
+              inputWindow.close()
+            }
+          }
+
+          ipcMain.on('dialog-result', handleDialogResult)
+
+          inputWindow.on('closed', () => {
+            ipcMain.removeListener('dialog-result', handleDialogResult)
+            resolve(null)
+          })
+
+          inputWindow.once('ready-to-show', () => {
+            inputWindow.show()
+          })
+        })
+      } catch (error) {
+        console.error('Error showing input dialog:', error)
+        return null
+      }
+    })
+
     ipcMain.on('exit-app', () => {
       app.quit()
     })
