@@ -11,6 +11,7 @@ import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode'
 
 import Dashboard from './components/Dashboard'
 import { ThemeProvider } from './contexts/ThemeContext'
+import Tabs from './components/Tabs'
 
 const editorConfig = {
   namespace: 'MyEditor',
@@ -61,16 +62,18 @@ const editorConfig = {
 const ZOOM_PRESETS = [50, 75, 100, 125, 150, 175, 200]
 
 function AppContent() {
-  const [activeDocument, setActiveDocument] = useState(null)
+  const [openDocuments, setOpenDocuments] = useState([]);
+  const [activeDocumentId, setActiveDocumentId] = useState(null);
   const [editorKey, setEditorKey] = useState(Date.now())
   const [lastSaved, setLastSaved] = useState(null)
   const [zoomLevel, setZoomLevel] = useState(100)
-  const [initialContent, setInitialContent] = useState('')
   const editorContentRef = useRef('')
 
+  const activeDocument = openDocuments.find(doc => doc.id === activeDocumentId);
+
   const handleGoToDashboard = useCallback(() => {
-    setActiveDocument(null)
-    setInitialContent('')
+    setOpenDocuments([]);
+    setActiveDocumentId(null);
     editorContentRef.current = ''
   }, [])
 
@@ -78,8 +81,13 @@ function AppContent() {
     try {
       const doc = await window.electron.ipcRenderer.invoke('get-document-content', docId)
       if (doc) {
-        setActiveDocument(doc)
-        setInitialContent(doc.content || '')
+        setOpenDocuments(prevDocs => {
+          if (prevDocs.find(d => d.id === doc.id)) {
+            return prevDocs.map(d => d.id === doc.id ? doc : d);
+          }
+          return [...prevDocs, doc];
+        });
+        setActiveDocumentId(doc.id);
         editorContentRef.current = doc.content || ''
         setLastSaved(new Date(doc.updated_at))
         setEditorKey(Date.now())
@@ -119,7 +127,7 @@ function AppContent() {
         content: editorContentRef.current
       })
       if (updatedDoc) {
-        setActiveDocument(updatedDoc)
+        setOpenDocuments(prevDocs => prevDocs.map(d => d.id === updatedDoc.id ? updatedDoc : d));
         setLastSaved(new Date(updatedDoc.updated_at))
       }
     } catch (error) {
@@ -135,7 +143,7 @@ function AppContent() {
         content: editorContentRef.current
       })
       if (updatedDoc) {
-        setActiveDocument(updatedDoc)
+        setOpenDocuments(prevDocs => prevDocs.map(d => d.id === updatedDoc.id ? updatedDoc : d));
         setLastSaved(new Date(updatedDoc.updated_at))
       }
     } catch (error) {
@@ -166,7 +174,7 @@ function AppContent() {
           newTitle
         })
         if (updatedDoc) {
-          setActiveDocument(updatedDoc)
+          setOpenDocuments(prevDocs => prevDocs.map(d => d.id === updatedDoc.id ? updatedDoc : d));
         }
       } catch (error) {
         console.error('Failed to rename document:', error)
@@ -203,14 +211,27 @@ function AppContent() {
       if (!confirmed) return
 
       await window.electron.ipcRenderer.invoke('delete-document', activeDocument.id)
-      setActiveDocument(null)
+      setOpenDocuments(prevDocs => prevDocs.filter(d => d.id !== activeDocument.id));
+      setActiveDocumentId(openDocuments[0]?.id || null);
       editorContentRef.current = ''
     } catch (error) {
       console.error('Failed to delete document:', error)
     }
-  }, [activeDocument?.id])
+  }, [activeDocument?.id, openDocuments])
 
-  if (!activeDocument) {
+  const handleSelectTab = (docId) => {
+    setActiveDocumentId(docId);
+  };
+
+  const handleCloseTab = (docId) => {
+    setOpenDocuments(prevDocs => prevDocs.filter(d => d.id !== docId));
+    if (activeDocumentId === docId) {
+      const newActiveId = openDocuments.filter(d => d.id !== docId)[0]?.id || null;
+      setActiveDocumentId(newActiveId);
+    }
+  };
+
+  if (openDocuments.length === 0) {
     return (
       <Dashboard
         onNewDocument={handleNewDocument}
@@ -223,6 +244,13 @@ function AppContent() {
   return (
     <LexicalComposer key={editorKey} initialConfig={editorConfig}>
       <div className="relative min-h-screen w-full">
+        <Tabs
+          openDocuments={openDocuments}
+          activeDocumentId={activeDocumentId}
+          onSelectTab={handleSelectTab}
+          onCloseTab={handleCloseTab}
+          onNewTab={handleNewDocument}
+        />
         <div className="min-h-screen w-full bg-gray-100 dark:bg-gray-900 flex">
           <main className="flex-1 flex flex-col min-h-screen overflow-auto relative">
             <div className="flex-1 py-8 px-16 overflow-auto pb-16">
@@ -243,11 +271,14 @@ function AppContent() {
                     <Toolbar />
                   </div>
                   <div className="relative">
-                    <Editor
-                      initialContent={activeDocument.content}
-                      onContentChange={handleContentChange}
-                      zoomLevel={zoomLevel}
-                    />
+                    {activeDocument && (
+                      <Editor
+                        key={activeDocument.id}
+                        initialContent={activeDocument.content}
+                        onContentChange={handleContentChange}
+                        zoomLevel={zoomLevel}
+                      />
+                    )}
                   </div>
                 </div>
               </div>

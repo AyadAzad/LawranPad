@@ -92,15 +92,17 @@ const Footer = ({
   }
 
   const handleRename = () => {
-    if (renameValue && renameValue !== document.title) {
+    if (renameValue && document && renameValue !== document.title) {
       onRename(renameValue)
     }
     setIsRenaming(false)
   }
 
   const handleDoubleClick = () => {
-    setRenameValue(document.title)
-    setIsRenaming(true)
+    if (document) {
+      setRenameValue(document.title)
+      setIsRenaming(true)
+    }
   }
 
   // Animation variants
@@ -208,34 +210,36 @@ const Footer = ({
           className="w-px h-4 bg-gradient-to-b from-transparent via-gray-300 to-transparent dark:via-gray-600"
         />
 
-        <motion.div variants={itemVariants}>
-          {isRenaming ? (
-            <motion.input
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              type="text"
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onBlur={handleRename}
-              onKeyDown={(e) => e.key === 'Enter' && handleRename()}
-              className="font-semibold bg-gray-200 dark:bg-gray-700 rounded px-1 -my-0.5 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
-              autoFocus
-            />
-          ) : (
-            <motion.div
-              className="flex items-center gap-1"
-              onDoubleClick={handleDoubleClick}
-              title={t('doubleClickToRename')}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <span className="font-semibold cursor-pointer bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-300 dark:to-gray-100 bg-clip-text text-transparent">
-                {document.title}
-              </span>
-            </motion.div>
-          )}
-        </motion.div>
+        {document && (
+          <motion.div variants={itemVariants}>
+            {isRenaming ? (
+              <motion.input
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                type="text"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={handleRename}
+                onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+                className="font-semibold bg-gray-200 dark:bg-gray-700 rounded px-1 -my-0.5 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+                autoFocus
+              />
+            ) : (
+              <motion.div
+                className="flex items-center gap-1"
+                onDoubleClick={handleDoubleClick}
+                title={t('doubleClickToRename')}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <span className="font-semibold cursor-pointer bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-300 dark:to-gray-100 bg-clip-text text-transparent">
+                  {document.title}
+                </span>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
 
         <motion.div
           variants={itemVariants}
@@ -427,7 +431,7 @@ const Footer = ({
 Footer.propTypes = {
   document: PropTypes.shape({
     title: PropTypes.string
-  }).isRequired,
+  }),
   lastSaved: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onRename: PropTypes.func.isRequired,
   zoomLevel: PropTypes.number.isRequired,
