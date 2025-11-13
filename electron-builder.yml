@@ -1,45 +1,72 @@
 appId: com.lawran.lawranpad
-productName: lawranpad
+productName: LawranPad
+copyright: Copyright © 2024 Lawran
+
+# Directories
 directories:
-  buildResources: resources
+  buildResources: build
+  output: dist
+  app: .
+
+# Build Settings
+asar: true
+compression: maximum
+removePackageScripts: true
+
+# Files to include
 files:
-  - '!**/.vscode/*'
-  - '!src/*'
-  - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
-  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - "out/**/*"
+  - "!out/main/*.map"
+  - "!out/preload/*.map"
+  - "!out/renderer/*.map"
+  - "node_modules/**/*"
+  - "!node_modules/**/test/**"
+  - "!node_modules/**/*.md"
+  - "package.json"
+
 asarUnpack:
-  - resources/**
+  - "**/node_modules/better-sqlite3/**/*"
+  - "**/node_modules/@tailwindcss/oxide-win32-x64-msvc/**/*"
+
+# Windows Configuration
 win:
-  icon: icon.ico
-  executableName: lawranpad
-nsis:
-  artifactName: ${name}-${version}-setup.${ext}
-  shortcutName: ${productName}
-  uninstallDisplayName: ${productName}
-  createDesktopShortcut: always
-mac:
-  icon: icon.png
-  entitlementsInherit: build/entitlements.mac.plist
-  extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
-    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
-  notarize: false
-dmg:
-  artifactName: ${name}-${version}.${ext}
-linux:
-  icon: icon.png
   target:
-    - AppImage
-    - snap
-    - deb
-  maintainer: electronjs.org
-  category: Utility
-appImage:
-  artifactName: ${name}-${version}.${ext}
-npmRebuild: false
-publish:
-  provider: generic
-  url: https://example.com/auto-updates
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+  publisherName: Lawran
+  requestedExecutionLevel: asInvoker
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+# NSIS Installer Configuration
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: LawranPad
+  license: build/license.txt
+  warningsAsErrors: false
+  differentialPackage: false
+  displayLanguageSelector: false
+  menuCategory: true
+  installerSidebar: build/installerSidebar.bmp
+  uninstallerSidebar: build/uninstallerSidebar.bmp
+
+# File Associations
+fileAssociations:
+  - ext: txt
+    name: Text Document
+    description: Plain Text Document
+    icon: build/icon.ico
+    role: Editor
+  - ext: md
+    name: Markdown Document
+    description: Markdown Document
+    icon: build/icon.ico
+    role: Editor

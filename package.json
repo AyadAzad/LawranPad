@@ -1,9 +1,10 @@
 {
   "name": "lawranpad",
   "version": "1.0.0",
-  "description": "An Electron application with React",
+  "description": "LawranPad - A modern text editor",
   "main": "./out/main/index.js",
-  "author": "example.com",
+  "author": "Lawran",
+  "license": "MIT",
   "homepage": "https://electron-vite.org",
   "scripts": {
     "format": "prettier --write .",
@@ -12,10 +13,19 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "postinstall": "electron-builder install-app-deps",
-    "build:unpack": "npm run build && electron-builder --dir",
-    "build:win": "npm run build && electron-builder --win",
-    "build:mac": "npm run build && electron-builder --mac",
-    "build:linux": "npm run build && electron-builder --linux"
+    "build:win": "npm run build && electron-builder build --win --config",
+    "dist": "npm run build && electron-builder --publish=never",
+    "dist:win": "npm run build && electron-builder build --win --publish=never",
+    "clean": "rimraf dist out",
+    "rebuild": "electron-rebuild -f -w better-sqlite3"
+  },
+  "build": {
+    "productName": "LawranPad",
+    "appId": "com.lawran.lawranpad",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    }
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
@@ -52,6 +62,7 @@
     "prettier": "^3.3.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "rimraf": "^5.0.1",
     "vite": "^5.3.1"
   }
 }

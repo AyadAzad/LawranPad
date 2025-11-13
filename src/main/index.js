@@ -13,8 +13,58 @@ import {
   findDocumentByPath
 } from './database.js'
 
+let mainWindow;
+let fileToOpenOnReady = null;
+
+// --- Single Instance Lock ---
+// This is the standard way to handle file associations and prevent multiple app instances.
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Someone tried to run a second instance. We should focus our window and open the file.
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+
+      // The file path is usually the last argument on Windows.
+      const filePath = commandLine.pop();
+      if (filePath && (filePath.endsWith('.txt') || filePath.endsWith('.md'))) {
+        handleOpenFile(filePath);
+      }
+    }
+  });
+}
+
+// Function to handle opening files by sending the path to the renderer process.
+const handleOpenFile = (filePath) => {
+  if (mainWindow) {
+    // Ensure the window is visible before sending the event
+    if (!mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.focus();
+    mainWindow.webContents.send('open-file-from-path', filePath);
+  }
+};
+
+// Handle file open requests on macOS.
+app.on('open-file', (event, path) => {
+  event.preventDefault();
+  if (app.isReady()) {
+    handleOpenFile(path);
+  } else {
+    fileToOpenOnReady = path; // Queue the file to be opened when the app is ready.
+  }
+});
+
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     show: false,
@@ -30,7 +80,12 @@ function createWindow() {
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    mainWindow.show();
+    // If a file was queued to be opened, open it now.
+    if (fileToOpenOnReady) {
+      handleOpenFile(fileToOpenOnReady);
+      fileToOpenOnReady = null;
+    }
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -112,44 +167,45 @@ app
     ipcMain.handle('create-new-document', () => createDocument())
     ipcMain.handle('delete-document', (_, id) => deleteDocument(id))
 
-    ipcMain.handle('open-file-dialog', async () => {
+    ipcMain.handle('open-file-dialog', async (event, filePath) => {
       try {
-        const { canceled, filePaths } = await dialog.showOpenDialog({
-          properties: ['openFile'],
-          filters: [
-            { name: 'Markdown', extensions: ['md', 'markdown'] },
-            { name: 'Text', extensions: ['txt'] },
-            { name: 'All Files', extensions: ['*'] }
-          ]
-        })
-
-        if (canceled || filePaths.length === 0) {
-          return null
+        if (!filePath) {
+          const { canceled, filePaths } = await dialog.showOpenDialog({
+            properties: ['openFile'],
+            filters: [
+              { name: 'Markdown', extensions: ['md', 'markdown'] },
+              { name: 'Text', extensions: ['txt'] },
+              { name: 'All Files', extensions: ['*'] }
+            ]
+          });
+          if (canceled || filePaths.length === 0) {
+            return null;
+          }
+          filePath = filePaths[0];
         }
 
-        const filePath = filePaths[0]
-        const content = await readFile(filePath, 'utf-8')
-        let doc = findDocumentByPath(filePath)
+        const content = await readFile(filePath, 'utf-8');
+        let doc = findDocumentByPath(filePath);
 
         if (doc) {
-          return updateDocument(doc.id, { content })
+          return updateDocument(doc.id, { content });
         } else {
           const title = basename(filePath)
             .replace(/[-_]/g, ' ')
-            .replace(/\.[^/.]+$/, '')
+            .replace(/\.[^/.]+$/, '');
 
           return createDocument({
             title,
             content,
             filePath
-          })
+          });
         }
       } catch (error) {
-        console.error('Error opening file:', error)
-        dialog.showErrorBox('Open Error', `Could not open the file: ${error.message}`)
-        return null
+        console.error('Error opening file:', error);
+        dialog.showErrorBox('Open Error', `Could not open the file: ${error.message}`);
+        return null;
       }
-    })
+    });
 
     ipcMain.handle('save-document', async (event, { id, content }) => {
       try {
@@ -342,6 +398,12 @@ app
     })
 
     createWindow()
+
+    // Handle file path from command line on startup (Windows)
+    const initialFilePath = process.argv.find(arg => arg.endsWith('.txt') || arg.endsWith('.md'));
+    if (initialFilePath) {
+        fileToOpenOnReady = initialFilePath;
+    }
 
     app.on('activate', function () {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()

@@ -97,6 +97,27 @@ function AppContent() {
     }
   }, [])
 
+  const handleOpenFileFromPath = useCallback(async (filePath) => {
+    try {
+      const doc = await window.electron.ipcRenderer.invoke('open-file-dialog', filePath);
+      if (doc) {
+        await loadDocument(doc.id);
+      }
+    } catch (error) {
+      console.error('Failed to open file from path:', error);
+    }
+  }, [loadDocument]);
+
+  useEffect(() => {
+    window.electron.ipcRenderer.on('open-file-from-path', (event, filePath) => {
+      handleOpenFileFromPath(filePath);
+    });
+
+    return () => {
+      window.electron.ipcRenderer.removeAllListeners('open-file-from-path');
+    };
+  }, [handleOpenFileFromPath]);
+
   const handleNewDocument = useCallback(async () => {
     try {
       const newDoc = await window.electron.ipcRenderer.invoke('create-new-document')
