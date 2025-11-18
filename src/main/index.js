@@ -17,19 +17,15 @@ let mainWindow;
 let fileToOpenOnReady = null;
 
 // --- Single Instance Lock ---
-// This is the standard way to handle file associations and prevent multiple app instances.
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
   app.quit();
 } else {
   app.on('second-instance', (event, commandLine, workingDirectory) => {
-    // Someone tried to run a second instance. We should focus our window and open the file.
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
-
-      // The file path is usually the last argument on Windows.
       const filePath = commandLine.pop();
       if (filePath && (filePath.endsWith('.txt') || filePath.endsWith('.md'))) {
         handleOpenFile(filePath);
@@ -38,10 +34,8 @@ if (!gotTheLock) {
   });
 }
 
-// Function to handle opening files by sending the path to the renderer process.
 const handleOpenFile = (filePath) => {
   if (mainWindow) {
-    // Ensure the window is visible before sending the event
     if (!mainWindow.isVisible()) {
       mainWindow.show();
     }
@@ -53,13 +47,12 @@ const handleOpenFile = (filePath) => {
   }
 };
 
-// Handle file open requests on macOS.
 app.on('open-file', (event, path) => {
   event.preventDefault();
   if (app.isReady()) {
     handleOpenFile(path);
   } else {
-    fileToOpenOnReady = path; // Queue the file to be opened when the app is ready.
+    fileToOpenOnReady = path;
   }
 });
 
@@ -81,7 +74,6 @@ function createWindow() {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show();
-    // If a file was queued to be opened, open it now.
     if (fileToOpenOnReady) {
       handleOpenFile(fileToOpenOnReady);
       fileToOpenOnReady = null;
@@ -209,36 +201,38 @@ app
 
     ipcMain.handle('save-document', async (event, { id, content }) => {
       try {
-        const doc = getDocument(id)
-        if (!doc) throw new Error('Document not found')
+        const doc = getDocument(id);
+        if (!doc) throw new Error('Document not found');
 
-        if (doc.file_path) {
-          await writeFile(doc.file_path, content, 'utf-8')
-          return updateDocument(id, { content })
+        const isTxtFile = doc.file_path && doc.file_path.toLowerCase().endsWith('.txt');
+
+        if (doc.file_path && !isTxtFile) {
+          await writeFile(doc.file_path, content, 'utf-8');
+          return updateDocument(id, { content });
         } else {
           const { canceled, filePath } = await dialog.showSaveDialog({
-            defaultPath: `${doc.title}.md`,
+            defaultPath: `${doc.title.replace(/\.txt$/i, '')}.md`,
             filters: [
               { name: 'Markdown', extensions: ['md'] },
               { name: 'Text', extensions: ['txt'] }
             ]
-          })
+          });
 
           if (canceled || !filePath) {
-            return doc
+            return doc;
           }
 
-          await writeFile(filePath, content, 'utf-8')
+          await writeFile(filePath, content, 'utf-8');
           const title = basename(filePath)
             .replace(/[-_]/g, ' ')
-            .replace(/\.[^/.]+$/, '')
-          return updateDocument(id, { title, content, file_path: filePath })
+            .replace(/\.[^/.]+$/, '');
+          return updateDocument(id, { title, content, file_path: filePath });
         }
       } catch (error) {
-        console.error('Error saving document:', error)
-        throw new Error(`Failed to save document: ${error.message}`)
+        console.error('Error saving document:', error);
+        throw new Error(`Failed to save document: ${error.message}`);
       }
-    })
+    });
 
     ipcMain.handle('save-file-as', async (event, { id, content }) => {
       try {
@@ -399,7 +393,6 @@ app
 
     createWindow()
 
-    // Handle file path from command line on startup (Windows)
     const initialFilePath = process.argv.find(arg => arg.endsWith('.txt') || arg.endsWith('.md'));
     if (initialFilePath) {
         fileToOpenOnReady = initialFilePath;

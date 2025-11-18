@@ -21,12 +21,12 @@ export default function HeadingsDropdown() {
     <div className="relative">
       <select
         onChange={(e) => onClick(e.target.value)}
-        className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 bg-transparent"
+        className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 bg-transparent text-gray-800 dark:text-white"
       >
-        <option value="">Heading</option>
+        <option value="">Title</option>
         {headings.map((heading) => (
           <option key={heading} value={heading}>
-            {heading.toUpperCase()}
+            {`Heading ${heading.substring(1)}`}
           </option>
         ))}
       </select>

@@ -12,6 +12,7 @@ import { ListPlugin } from '@lexical/react/LexicalListPlugin'
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin'
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin'
 import { HorizontalRulePlugin } from '@lexical/react/LexicalHorizontalRulePlugin'
+import { TablePlugin } from '@lexical/react/LexicalTablePlugin'
 import { useTranslation } from 'react-i18next'
 import {
   $convertFromMarkdownString,
@@ -165,7 +166,11 @@ const styles = `
   }
 `
 
-const ALL_TRANSFORMERS = Object.values(TRANSFORMERS).filter(t => t !== TRANSFORMERS.CHECK_LIST);
+// Use the spread operator on the TRANSFORMERS object to get all transformers.
+// This is the most reliable way to ensure all standard transformers are included.
+const ALL_TRANSFORMERS = [
+  ...Object.values(TRANSFORMERS)
+];
 
 function MarkdownPlugin({ initialContent, onContentChange }) {
   const [editor] = useLexicalComposerContext()
