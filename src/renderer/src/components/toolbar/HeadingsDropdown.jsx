@@ -1,21 +1,29 @@
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $createHeadingNode } from '@lexical/rich-text';
-import { $setBlocksType } from '@lexical/selection';
-import { $getSelection, $isRangeSelection } from 'lexical';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
+import { $createHeadingNode } from '@lexical/rich-text'
+import { $setBlocksType } from '@lexical/selection'
+import { $getSelection, $isRangeSelection } from 'lexical'
 
-const headings = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+const headingOptions = [
+  { name: 'Title', tag: 'h1' },
+  { name: 'Sub-title', tag: 'h2' },
+  { name: 'Section', tag: 'h3' },
+  { name: 'Sub-section', tag: 'h4' },
+  { name: 'Paragraph', tag: 'p' }
+]
 
 export default function HeadingsDropdown() {
-  const [editor] = useLexicalComposerContext();
+  const [editor] = useLexicalComposerContext()
 
-  const onClick = (heading) => {
+  const onClick = (tag) => {
+    if (tag === '') return
+
     editor.update(() => {
-      const selection = $getSelection();
+      const selection = $getSelection()
       if ($isRangeSelection(selection)) {
-        $setBlocksType(selection, () => $createHeadingNode(heading));
+        $setBlocksType(selection, () => $createHeadingNode(tag))
       }
-    });
-  };
+    })
+  }
 
   return (
     <div className="relative">
@@ -23,13 +31,13 @@ export default function HeadingsDropdown() {
         onChange={(e) => onClick(e.target.value)}
         className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 bg-transparent text-gray-800 dark:text-white"
       >
-        <option value="">Title</option>
-        {headings.map((heading) => (
-          <option key={heading} value={heading}>
-            {`Heading ${heading.substring(1)}`}
+        <option value="">Select Style</option>
+        {headingOptions.map((option) => (
+          <option key={option.tag} value={option.tag}>
+            {option.name}
           </option>
         ))}
       </select>
     </div>
-  );
+  )
 }

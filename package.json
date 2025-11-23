@@ -19,14 +19,6 @@
     "clean": "rimraf dist out",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
-  "build": {
-    "productName": "LawranPad",
-    "appId": "com.lawran.lawranpad",
-    "directories": {
-      "output": "dist",
-      "buildResources": "build"
-    }
-  },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
@@ -53,7 +45,7 @@
     "@electron-toolkit/eslint-config-prettier": "^2.0.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.21",
-    "electron": "^31.0.2",
+    "electron": "^33.2.1",
     "electron-builder": "^24.13.3",
     "electron-rebuild": "^3.2.9",
     "electron-vite": "^2.3.0",

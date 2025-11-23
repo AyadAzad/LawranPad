@@ -13,6 +13,9 @@ asar: true
 compression: maximum
 removePackageScripts: true
 
+# CRITICAL FIX: Disable auto-rebuild because you use 'postinstall' script
+npmRebuild: false
+
 # Files to include
 files:
   - "out/**/*"
@@ -25,8 +28,8 @@ files:
   - "package.json"
 
 asarUnpack:
-  - "**/node_modules/better-sqlite3/**/*"
-  - "**/node_modules/@tailwindcss/oxide-win32-x64-msvc/**/*"
+  - "node_modules/better-sqlite3"
+  - "node_modules/@tailwindcss/oxide-win32-x64-msvc"
 
 # Windows Configuration
 win:
@@ -55,8 +58,6 @@ nsis:
   differentialPackage: false
   displayLanguageSelector: false
   menuCategory: true
-  installerSidebar: build/installerSidebar.bmp
-  uninstallerSidebar: build/uninstallerSidebar.bmp
 
 # File Associations
 fileAssociations:
