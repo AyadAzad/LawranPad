@@ -18,6 +18,7 @@
 [data-lexical-editor] * {
   font-family: inherit;
   font-size: inherit;
+  color: inherit;
 }
 
 /* Support for text formatting */
